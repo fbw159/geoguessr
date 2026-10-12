@@ -264,3 +264,91 @@ export async function testKey(key) {
     return { ok: false, reason: 'GitHub ist gerade nicht erreichbar.' };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Allgemeine JSON-Dateien auf dem Daten-Branch (für den Competition Mode)
+// ---------------------------------------------------------------------------
+// Serverzeit: aus dem Commit-Datum der eigenen Schreibzugriffe geschätzt.
+// Nur wenn die PC-Uhr deutlich abweicht (> 1,5 s), wird korrigiert.
+let serverOffset = 0;
+const offsets = [];
+export const serverNow = () => Date.now() + serverOffset;
+function noteServerDate(dateStr, t0, t1) {
+  const s = Date.parse(dateStr);
+  if (!s) return;
+  offsets.push(s + 500 - (t0 + t1) / 2); // Commit-Zeit hat nur Sekunden → +0,5 s
+  if (offsets.length > 9) offsets.shift();
+  const med = [...offsets].sort((a, b) => a - b)[Math.floor(offsets.length / 2)];
+  serverOffset = Math.abs(med) > 1500 ? med : 0;
+}
+
+async function decodeContent(j, useKey) {
+  if (j.content && j.encoding === 'base64') return b64decodeUtf8(j.content);
+  const b = await fetch(j.git_url, { headers: headers(useKey), cache: 'no-store' });
+  if (!b.ok) throw new Error('Datei konnte nicht geladen werden');
+  return b64decodeUtf8((await b.json()).content);
+}
+
+// Liest eine Datei. Mit etag: bei unveränderter Datei { notModified: true } (zählt nicht gegen GitHubs Limit).
+export async function readFile(path, etag = null) {
+  const h = headers(true);
+  if (etag) h['If-None-Match'] = etag;
+  let res;
+  try {
+    res = await fetch(`${API}/contents/${path}?ref=${REPO.dataBranch}`, { headers: h, cache: 'no-store' });
+  } catch {
+    throw new Error('Keine Verbindung zu GitHub');
+  }
+  if (res.status === 304) return { notModified: true, etag };
+  if (res.status === 404) return { data: null, sha: null, etag: null };
+  if (!res.ok) throw new Error(`GitHub antwortet mit Fehler ${res.status}`);
+  const j = await res.json();
+  return { data: JSON.parse(await decodeContent(j, true)), sha: j.sha, etag: res.headers.get('ETag') };
+}
+
+// Schreibt eine Datei (sha = null → neu anlegen; existiert sie schon, gibt es einen Konflikt)
+export async function writeFile(path, data, sha, message) {
+  const body = { message, content: b64encodeUtf8(JSON.stringify(data)), branch: REPO.dataBranch };
+  if (sha) body.sha = sha;
+  const t0 = Date.now();
+  let res;
+  try {
+    res = await fetch(`${API}/contents/${path}`, {
+      method: 'PUT',
+      headers: { ...headers(true), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error('Keine Verbindung zu GitHub');
+  }
+  const t1 = Date.now();
+  if (res.status === 409 || res.status === 422) { const e = new Error('Konflikt'); e.conflict = true; throw e; }
+  if (res.status === 401 || res.status === 403 || res.status === 404) {
+    const e = new Error('Schlüssel fehlt, ist ungültig oder hat kein Schreibrecht'); e.auth = true; throw e;
+  }
+  if (!res.ok) throw new Error(`Speichern fehlgeschlagen (${res.status})`);
+  const j = await res.json();
+  if (j.commit?.committer?.date) noteServerDate(j.commit.committer.date, t0, t1);
+  return { sha: j.content?.sha || null };
+}
+
+// Lesen → ändern → schreiben, bei gleichzeitigen Änderungen automatisch wiederholen.
+// fn(draft) ändert draft (oder gibt ein neues Objekt zurück); return false = nichts zu tun.
+export async function mutateFile(path, fn, message, { create = false } = {}) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const cur = await readFile(path);
+    if (cur.data == null && !create) { const e = new Error('Datei nicht gefunden'); e.notFound = true; throw e; }
+    const draft = cur.data == null ? null : JSON.parse(JSON.stringify(cur.data));
+    const out = fn(draft);
+    if (out === false) return { data: cur.data, unchanged: true };
+    const next = out === undefined ? draft : out;
+    try {
+      await writeFile(path, next, cur.sha, message);
+      return { data: next };
+    } catch (e) {
+      if (!e.conflict) throw e;
+      await sleep(250 + Math.random() * 600 * (attempt + 1));
+    }
+  }
+  throw new Error('Zu viele gleichzeitige Änderungen – bitte gleich nochmal versuchen');
+}

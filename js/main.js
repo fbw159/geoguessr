@@ -7,11 +7,14 @@ import { countryList, getMap, loadLocations, pool } from './locations.js';
 import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './ui.js';
 import { gameActive, initGame, startGame } from './game.js';
+import { initPlayView } from './playview.js';
+import { compActive, initCompetition, openMatch, renderHub } from './competition.js';
 
 const prefs = { ...DEFAULT_PREFS, ...lsGet('gg.prefs', {}) };
 let currentPlayerId = lsGet('gg.player', null);
 let challenge = null;
 let keyFromLink = false;
+let pendingMatch = null;
 let locationsReady = false;
 let lbSort = 'avgRound';
 
@@ -25,7 +28,9 @@ const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?' + ne
 // ============================== Start ==============================
 async function boot() {
   readHash();
+  initPlayView();
   initGame({ navigate });
+  initCompetition({ navigate, playerDialog });
   bindNav();
   bindFullscreen();
   bindSetup();
@@ -33,9 +38,10 @@ async function boot() {
   bindSettings();
   store.onChange(onStoreChange);
   window.addEventListener('hashchange', async () => {
-    if (!readHash() || gameActive()) return;
-    navigate('home');
+    if (!readHash() || gameActive() || compActive()) return;
     if (keyFromLink) { await store.refresh(); await checkKeyFromLink(); }
+    if (pendingMatch) { const code = pendingMatch; pendingMatch = null; openMatch(code); }
+    else navigate('home');
   });
 
   navigate('home');
@@ -47,9 +53,10 @@ async function boot() {
 
   await store.refresh();
   if (keyFromLink) await checkKeyFromLink();
+  if (pendingMatch) { const code = pendingMatch; pendingMatch = null; openMatch(code); }
   setInterval(() => { if (store.status().pending && store.status().hasKey) store.flush(); }, 60000);
   window.addEventListener('online', () => store.flush());
-  window.addEventListener('beforeunload', e => { if (gameActive()) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', e => { if (gameActive() || compActive()) { e.preventDefault(); e.returnValue = ''; } });
 }
 
 async function checkKeyFromLink() {
@@ -70,6 +77,11 @@ function readHash() {
     if (k !== store.getKey()) { store.setKey(k); keyFromLink = true; }
     handled = true;
   }
+  if (h.get('m')) {
+    const code = h.get('m').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length === 4) pendingMatch = code;
+    handled = true;
+  }
   if (h.get('c')) {
     try {
       const c = unb64url(h.get('c'));
@@ -87,6 +99,7 @@ function navigate(screen) {
   if (screen === 'setup') renderSetup();
   if (screen === 'leaderboard') renderLeaderboard();
   if (screen === 'settings') renderSettings();
+  if (screen === 'comp') renderHub();
   show(screen);
 }
 

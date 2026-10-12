@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,6 +22,7 @@
     <header class="topbar">
       <a class="brand" href="#" data-nav="home"><span class="brand-globe">🌍</span><span class="brand-text">GEO<b>GUESSR</b></span><span class="brand-sub">Freunde-Edition</span></a>
       <nav class="topnav">
+        <button class="navbtn navbtn-comp" data-nav="comp">⚔️ Competition Mode</button>
         <button class="navbtn" data-nav="leaderboard">🏆 Bestenliste</button>
         <button class="navbtn" data-nav="settings">⚙️ Einstellungen</button>
         <span id="sync-badge" class="sync-badge" title="Speicherstatus"></span>
@@ -95,18 +96,20 @@
       <div class="hud-stats">
         <div><span class="hud-k">Karte</span><span class="hud-v" id="hud-map"></span></div>
         <div><span class="hud-k">Runde</span><span class="hud-v" id="hud-round"></span></div>
-        <div><span class="hud-k">Punkte</span><span class="hud-v" id="hud-score"></span></div>
+        <div><span class="hud-k" id="hud-score-label">Punkte</span><span class="hud-v" id="hud-score"></span></div>
       </div>
       <div class="hud-actions">
         <button class="chip" id="btn-reset-view" title="Zurück zum Startpunkt">⟲ Zum Start</button>
         <button class="chip" id="btn-skip" title="Falls das Bild nicht lädt: anderen Ort nehmen">↻ Neuer Ort</button>
         <button class="chip" data-fs title="Vollbild an/aus">⛶</button>
         <button class="chip chip-stop hidden" id="btn-stop" title="Endlos-Spiel beenden und speichern">🏁 Beenden</button>
-        <button class="chip chip-danger" id="btn-quit" title="Spiel abbrechen (wird nicht gespeichert)">✕</button>
+        <button class="chip chip-danger" id="btn-quit" title="Spiel abbrechen">✕</button>
       </div>
+      <div id="hud-extra" class="hud-extra hidden"></div>
     </div>
 
     <div id="timer" class="timer hidden"></div>
+    <div id="play-wait" class="play-wait hidden"></div>
 
     <div id="guess-panel" class="guess-panel">
       <div class="guess-tools">
@@ -254,9 +257,143 @@
         <p class="muted small" id="data-info"></p>
       </div>
 
-      <p class="muted small credits">Street View: Google Maps · Karten: © OpenStreetMap-Mitwirkende (openstreetmap.de) · Orte: WorldGuessr-Datensatz (nicht-kommerziell) · Flaggen: flagcdn.com</p>
+      <p class="muted small credits">Street View: Google Maps · Karten: VersaTiles „Natur“, © OpenStreetMap-Mitwirkende · Orte: WorldGuessr-Datensatz (nicht-kommerziell) · Flaggen: flagcdn.com</p>
     </main>
   </section>
+
+
+  <!-- ============ COMPETITION: MENÜ ============ -->
+  <section id="screen-comp" class="screen">
+    <header class="topbar">
+      <a class="brand" href="#" data-nav="home"><span class="brand-globe">🌍</span><span class="brand-text">GEO<b>GUESSR</b></span></a>
+      <nav class="topnav">
+        <button class="navbtn" data-nav="home">← Zurück</button>
+        <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
+      </nav>
+    </header>
+    <main class="comp-main">
+      <h1 class="headline">⚔️ Competition Mode</h1>
+      <p class="subline">Alle spielen gleichzeitig dieselben Orte – Genauigkeit zählt, Tempo auch.</p>
+      <div id="comp-nokey" class="ks ks-warn hidden">Für den Competition Mode braucht dieser Browser den Schlüssel. Öffne einmal den Einladungslink (oder trage ihn in den Einstellungen ein).</div>
+      <div class="comp-grid">
+        <div class="card comp-card">
+          <h2 class="h2">Neuer Wettkampf</h2>
+          <div class="field"><span>Du spielst als</span>
+            <div class="row"><select id="cc-player"></select><button class="btn btn-ghost" id="cc-new-player">+ Neuer Spieler</button></div>
+          </div>
+          <label class="field"><span>Karte</span><select id="cc-map"></select></label>
+          <div class="comp-opts">
+            <div class="opt">
+              <span class="opt-label">Runden</span>
+              <div class="seg" data-copt="rounds"><button data-v="3">3</button><button data-v="5">5</button><button data-v="10">10</button></div>
+            </div>
+            <div class="opt">
+              <span class="opt-label">Zeit pro Runde</span>
+              <div class="seg" data-copt="time"><button data-v="30">30 s</button><button data-v="60">1 min</button><button data-v="90">1:30</button><button data-v="120">2 min</button></div>
+            </div>
+            <div class="opt">
+              <span class="opt-label">Modus</span>
+              <div class="seg" data-copt="mode"><button data-v="move">Bewegen</button><button data-v="nmpz">Standbild (NMPZ)</button></div>
+            </div>
+          </div>
+          <button id="cc-create" class="btn btn-primary btn-xl">Lobby öffnen</button>
+        </div>
+        <div class="card comp-card">
+          <h2 class="h2">Beitreten</h2>
+          <p class="muted">Code vom Host eingeben – oder einfach den Einladungslink öffnen.</p>
+          <div class="row"><input id="cj-code" class="code-input" maxlength="4" placeholder="KX4P" autocomplete="off" spellcheck="false"><button id="cj-join" class="btn btn-primary">Beitreten</button></div>
+          <h3 class="h3">So wird gewertet</h3>
+          <p class="muted">Punkte pro Runde = <b>Genauigkeit</b> (0–100, wie im normalen Spiel) × <b>Tempo-Faktor</b>. Wer sofort tippt, behält 100 %, wer erst am Zeitlimit tippt, 70 %.</p>
+          <p class="muted small">Beispiel: 80 Genauigkeit nach 10 s von 60 s → 76 Punkte, nach 50 s → 60 Punkte.</p>
+          <p class="muted small">Wettkämpfe zählen nur hier – nicht in der normalen Bestenliste.</p>
+        </div>
+      </div>
+      <h2 class="h2">Wettkampf-Bestenliste <button class="chip" id="comp-refresh" title="Neu laden">⟳</button></h2>
+      <div class="table-wrap">
+        <table class="lb-table comp-lb">
+          <thead><tr><th>#</th><th>Spieler</th><th class="key-col">Siege</th><th>Podest</th><th>Wettkämpfe</th><th title="Durchschnittliche Wettkampf-Punkte pro Runde (inkl. Tempo)">Ø Punkte / Runde</th><th title="Durchschnittliche Genauigkeit pro Runde (0–100)">Ø Genauigkeit</th><th title="Durchschnittliche Zeit bis zum Tipp">Ø Zeit</th></tr></thead>
+          <tbody id="comp-lb-body"></tbody>
+        </table>
+      </div>
+      <h2 class="h2">Letzte Wettkämpfe</h2>
+      <div id="comp-recent" class="comp-recent"></div>
+    </main>
+  </section>
+
+  <!-- ============ COMPETITION: LOBBY ============ -->
+  <section id="screen-comp-lobby" class="screen">
+    <header class="topbar">
+      <a class="brand"><span class="brand-globe">🌍</span><span class="brand-text">GEO<b>GUESSR</b></span><span class="brand-sub">Competition Mode</span></a>
+      <nav class="topnav"><button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button></nav>
+    </header>
+    <main class="comp-main">
+      <div class="lobby-head card">
+        <div>
+          <div class="opt-label">Wettkampf-Code</div>
+          <div id="lobby-code" class="lobby-code">····</div>
+        </div>
+        <div class="lobby-info">
+          <div id="lobby-settings" class="lobby-settings"></div>
+          <button id="lobby-copy" class="btn btn-ghost">🔗 Einladungslink kopieren</button>
+        </div>
+      </div>
+      <h2 class="h2">Mitspieler <span id="lobby-count" class="muted"></span></h2>
+      <div id="lobby-players" class="lobby-players"></div>
+      <div id="lobby-pick" class="hidden">
+        <h2 class="h2">Mit welchem Spieler trittst du an?</h2>
+        <div id="lobby-pick-grid" class="player-grid"></div>
+      </div>
+      <div id="lobby-running" class="ks ks-warn hidden">Dieser Wettkampf läuft bereits – du bist nicht dabei.</div>
+      <div class="lobby-actions">
+        <button id="lobby-start" class="btn btn-primary btn-xl hidden">Los!</button>
+        <div id="lobby-wait" class="lobby-wait hidden"></div>
+        <button id="lobby-leave" class="btn btn-ghost">Verlassen</button>
+      </div>
+    </main>
+  </section>
+
+  <!-- ============ COMPETITION: RUNDENERGEBNIS ============ -->
+  <section id="screen-comp-result" class="screen">
+    <div id="cr-map" class="final-map"></div>
+    <div class="final-card cr-card">
+      <div class="cr-head">
+        <div id="cr-title" class="cr-title"></div>
+        <div id="cr-place" class="result-place"></div>
+      </div>
+      <table class="rounds-table cr-table">
+        <thead><tr><th>#</th><th>Spieler</th><th>Entfernung</th><th>Zeit</th><th title="Genauigkeit 0–100">Genau.</th><th>Punkte</th><th>Gesamt</th></tr></thead>
+        <tbody id="cr-body"></tbody>
+      </table>
+      <div id="cr-next" class="cr-next"></div>
+      <div class="final-actions">
+        <button id="cr-skip" class="btn btn-primary hidden">Jetzt weiter</button>
+        <button id="cr-final" class="btn btn-primary hidden">🏆 Zur Siegerehrung</button>
+        <a id="cr-gmaps" class="btn btn-ghost" target="_blank" rel="noopener">In Google Maps ansehen ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPETITION: SIEGEREHRUNG ============ -->
+  <section id="screen-comp-final" class="screen">
+    <div id="cf-map" class="final-map"></div>
+    <div class="final-card cf-card">
+      <div class="cf-title">🏆 Siegerehrung</div>
+      <div id="cf-sub" class="muted small"></div>
+      <div id="cf-podium" class="podium"></div>
+      <table class="rounds-table">
+        <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th><th title="Durchschnittliche Genauigkeit pro Runde">Ø Genau.</th><th>Ø Zeit</th></tr></thead>
+        <tbody id="cf-body"></tbody>
+      </table>
+      <div id="cf-save" class="final-save"></div>
+      <div class="final-actions">
+        <button id="cf-rematch" class="btn btn-primary hidden">🔁 Revanche (gleiche Einstellungen)</button>
+        <button id="cf-hub" class="btn btn-ghost">⚔️ Competition-Menü</button>
+        <button class="btn btn-ghost" data-nav="home">Hauptmenü</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="comp-countdown" class="countdown hidden"><div id="cd-label" class="cd-label"></div><div id="cd-num" class="cd-num"></div></div>
 
   <!-- ============ MODAL & TOAST ============ -->
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
@@ -266,7 +403,7 @@
   </div>
   <div id="toasts" class="toasts"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

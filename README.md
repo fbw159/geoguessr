@@ -11,6 +11,18 @@ Ein kleines, privates GeoGuessr für mich und meine Freunde – im Browser, ohne
 3. Street View anschauen, Pin auf die Karte setzen, „Raten“. Bis zu 100 Punkte pro Runde.
 4. Nach dem Spiel landen die Punkte automatisch auf dem Konto des Spielers. Die **Bestenliste** vergleicht alle Spieler nach **Ø Punkten pro Guess** (Platz ab 10 Guesses).
 
+## ⚔️ Competition Mode
+
+Mehrere Spieler an eigenen Rechnern spielen **gleichzeitig dieselben Orte**:
+
+1. Einer klickt auf „Competition Mode“ → „Neuer Wettkampf“ (Karte, 3/5/10 Runden, Zeitlimit) und bekommt einen Code samt Einladungslink.
+2. Die anderen öffnen den Link (er enthält auch den Schlüssel) und wählen ihren Spieler.
+3. Der Host drückt „Los!“ – Countdown, dann startet jede Runde für alle gleichzeitig.
+4. Punkte pro Runde = Genauigkeit (0–100) × Tempo-Faktor (sofort 100 %, am Zeitlimit 70 %).
+5. Nach jeder Runde sieht man alle Pins, am Ende gibt es eine Siegerehrung und auf Wunsch eine Revanche.
+
+Wettkämpfe werden getrennt gespeichert (`data/competitions.json`) und erscheinen nur in der Wettkampf-Bestenliste.
+
 Extras: Endlos-Modus (spielen, bis man auf „Beenden“ drückt), Zeitlimit, Standbild-Modus (NMPZ), Challenge-Links („Gleiche Orte als Challenge teilen“), Spielerprofile mit Statistik.
 
 ## Wo werden die Punkte gespeichert?
@@ -26,7 +38,8 @@ Ohne Schlüssel wird ein Spiel lokal im Browser gesichert und automatisch hochge
 
 - Reines HTML/CSS/JavaScript, gehostet über GitHub Pages – kein Server, kein Build.
 - Street View über den Google-Maps-Embed (ohne API-Key) mit festen Panorama-IDs.
-- Rate-Karte: [Leaflet](https://leafletjs.com/) mit Kacheln von openstreetmap.de (© OpenStreetMap-Mitwirkende).
+- Karten: [MapLibre GL](https://maplibre.org/) mit dem Stil „Natur“ von [VersaTiles](https://versatiles.org/) (Vektorkarte, deutsche Namen, © OpenStreetMap-Mitwirkende).
+- Competition Mode: je Wettkampf eine JSON-Datei unter `data/matches/` auf dem Branch `data`; die Browser fragen sie alle ~2 s ab (mit ETag).
 - Orte: ~26.000 Panoramen aus dem Datensatz von [WorldGuessr](https://github.com/codergautam/worldguessr)
   (PolyForm Noncommercial – hier rein privat genutzt). Deutschland, Österreich und Schweiz komplett, der Rest als Stichprobe.
 - Punkteformel (GeoGuessr-Kurve, auf 100 skaliert): `100 · e^(−10 · Entfernung / Kartengröße)`; Kartengröße = Diagonale der Karte (Welt: 14.917 km).

@@ -221,7 +221,7 @@ function showResult(r) {
   rLayer.clearLayers();
   rmap.invalidateSize({ animate: false });
   const a = r.p;
-  L.marker(a, { icon: actualIcon('🚩') }).addTo(rLayer);
+  L.marker(a, { icon: actualIcon('') }).addTo(rLayer);
   if (r.g) {
     const g = nearCopy(a, r.g);
     L.polyline([a, g], { color: '#1a1446', weight: 3, dashArray: '2 9', lineCap: 'round', opacity: .85 }).addTo(rLayer);

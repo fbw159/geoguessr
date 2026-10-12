@@ -261,6 +261,7 @@ select.sel { border-color: var(--accent); background: rgba(254, 205, 25, 0.12); 
   display: grid; place-items: center; font-weight: 900; font-size: 13px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
   font-family: 'Nunito', 'Segoe UI Emoji', sans-serif;
 }
+.mk-actual:empty::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
 
 /* ---------------- Rundenergebnis ---------------- */
 .result-map { position: absolute; top: 0; left: 0; right: 0; bottom: 200px; }

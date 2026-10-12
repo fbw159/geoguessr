@@ -6,7 +6,7 @@
 // Änderungen landen zuerst in einer lokalen Warteschlange und werden dann
 // hochgeladen – so geht nichts verloren, auch wenn GitHub mal hakt.
 // ---------------------------------------------------------------------------
-import { REPO } from './config.js';
+import { POINTS_VERSION, REPO } from './config.js';
 import { b64decodeUtf8, b64encodeUtf8, lsDel, lsGet, lsSet, sleep, uid } from './util.js';
 
 const K = { key: 'gg.key', cache: 'gg.db', queue: 'gg.queue' };
@@ -15,12 +15,15 @@ const RAW = `https://raw.githubusercontent.com/${REPO.owner}/${REPO.repo}/${REPO
 
 const emptyDb = () => ({ version: 1, players: [], games: [] });
 
+// Nur Spiele mit der aktuellen Punkteskala (0–100 pro Runde) zählen
+const isCurrentGame = g => g && g.pv === POINTS_VERSION;
+
 function normalize(db) {
   if (!db || typeof db !== 'object') return emptyDb();
   return {
     version: db.version || 1,
     players: Array.isArray(db.players) ? db.players : [],
-    games: Array.isArray(db.games) ? db.games : [],
+    games: Array.isArray(db.games) ? db.games.filter(isCurrentGame) : [],
   };
 }
 
@@ -125,7 +128,7 @@ function applyOp(db, op) {
       db.games = db.games.filter(g => g.player !== op.id);
       break;
     case 'addGame':
-      if (!db.games.some(g => g.id === op.data.id)) db.games.push(op.data);
+      if (isCurrentGame(op.data) && !db.games.some(g => g.id === op.data.id)) db.games.push(op.data);
       break;
   }
   return db;

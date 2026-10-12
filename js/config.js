@@ -12,7 +12,12 @@ export const SITE_URL = `https://${REPO.owner}.github.io/${REPO.repo}/`;
 
 // Maximaldistanz der Weltkarte wie bei GeoGuessr (km) – Basis für die Punkteformel
 export const WORLD_MAX_DIST = 14916.862;
-export const MAX_ROUND_SCORE = 5000;
+// Punkte pro Runde: 0–100 (= Prozent). POINTS_VERSION kennzeichnet Spiele mit dieser Skala;
+// ältere Spiele (0–5.000) werden ignoriert.
+export const MAX_ROUND_SCORE = 100;
+export const POINTS_VERSION = 2;
+// Ab so vielen Guesses bekommt ein Spieler einen Platz in der Rangliste "Ø pro Guess"
+export const MIN_GUESSES_FOR_RANK = 10;
 
 export const PLAYER_COLORS = ['#fecd19', '#6cb928', '#e94560', '#4cc9f0', '#f77f00', '#b5179e', '#00b4a6', '#ff70a6', '#7b61ff', '#8d99ae'];
 export const PLAYER_EMOJIS = ['🧭', '🌍', '🦊', '🐻', '🐼', '🦁', '🐸', '🐙', '🦄', '🐧', '🦉', '🚀', '⚽', '🎸', '🍕', '🌵', '👑', '😎', '🤠', '🗺️'];

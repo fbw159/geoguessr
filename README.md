@@ -8,10 +8,10 @@ Ein kleines, privates GeoGuessr für mich und meine Freunde – im Browser, ohne
 
 1. Seite öffnen und den eigenen Spieler auswählen (oder mit „Neuer Spieler“ anlegen – nur ein Name, kein Passwort).
 2. Karte wählen (Welt, Europa, Deutschland, DACH, Kontinente oder ein einzelnes Land), Runden, Zeitlimit und Modus einstellen.
-3. Street View anschauen, Pin auf die Karte setzen, „Raten“. Bis zu 5.000 Punkte pro Runde.
-4. Nach dem Spiel landen die Punkte automatisch auf dem Konto des Spielers. Die **Bestenliste** zeigt alle Spieler.
+3. Street View anschauen, Pin auf die Karte setzen, „Raten“. Bis zu 100 Punkte pro Runde.
+4. Nach dem Spiel landen die Punkte automatisch auf dem Konto des Spielers. Die **Bestenliste** vergleicht alle Spieler nach **Ø Punkten pro Guess** (Platz ab 10 Guesses).
 
-Extras: Zeitlimit, Standbild-Modus (NMPZ), Challenge-Links („Gleiche Orte als Challenge teilen“), Spielerprofile mit Statistik.
+Extras: Endlos-Modus (spielen, bis man auf „Beenden“ drückt), Zeitlimit, Standbild-Modus (NMPZ), Challenge-Links („Gleiche Orte als Challenge teilen“), Spielerprofile mit Statistik.
 
 ## Wo werden die Punkte gespeichert?
 
@@ -29,6 +29,6 @@ Ohne Schlüssel wird ein Spiel lokal im Browser gesichert und automatisch hochge
 - Rate-Karte: [Leaflet](https://leafletjs.com/) mit Kacheln von openstreetmap.de (© OpenStreetMap-Mitwirkende).
 - Orte: ~26.000 Panoramen aus dem Datensatz von [WorldGuessr](https://github.com/codergautam/worldguessr)
   (PolyForm Noncommercial – hier rein privat genutzt). Deutschland, Österreich und Schweiz komplett, der Rest als Stichprobe.
-- Punkteformel wie bei GeoGuessr: `5000 · e^(−10 · Entfernung / Kartengröße)`.
+- Punkteformel (GeoGuessr-Kurve, auf 100 skaliert): `100 · e^(−10 · Entfernung / Kartengröße)`; Kartengröße = Diagonale der Karte (Welt: 14.917 km).
 
 Nur für den privaten Gebrauch.

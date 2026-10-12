@@ -333,12 +333,12 @@ select.sel { border-color: var(--accent); background: rgba(254, 205, 25, 0.12); 
 .cell-player { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; }
 .recent-games, .profile-games { display: flex; flex-direction: column; gap: 6px; }
 .game-row {
-  display: grid; grid-template-columns: auto 140px 1fr 160px 90px 120px; align-items: center; gap: 12px;
+  display: grid; grid-template-columns: auto 140px 1fr 160px 130px 120px; align-items: center; gap: 12px;
   padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line);
   color: var(--text); cursor: pointer; text-align: left; font-size: 0.95rem;
 }
 .game-row:hover { background: rgba(255, 255, 255, 0.08); }
-.profile-games .game-row { grid-template-columns: 1fr 120px 80px 110px; }
+.profile-games .game-row { grid-template-columns: 1fr 110px 120px 110px; }
 .gr-name { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gr-map { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gr-bar { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
@@ -426,3 +426,17 @@ select.sel { border-color: var(--accent); background: rgba(254, 205, 25, 0.12); 
 .leaflet-container { isolation: isolate; }
 .fs-btn { padding: 9px 13px; font-size: 1.05rem; line-height: 1; }
 [data-fs].on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* Rate-Karte lässt Maus-Ziehen von Street View durch */
+.guess-panel.passthrough, .guess-panel.passthrough * { pointer-events: none !important; }
+.chip-stop { background: rgba(254, 205, 25, 0.18); border-color: rgba(254, 205, 25, 0.6); }
+.chip-stop:hover { background: var(--accent); color: var(--accent-ink); }
+.lb-table th.key-col { color: var(--text); }
+.lb-table th.key-col.sorted { color: var(--accent); }
+.lb-table td.key-val { font-size: 1.2rem; font-weight: 900; color: var(--accent); }
+.lb-hint { margin: 0 0 6px; max-width: 760px; line-height: 1.5; }
+.rank-note { font-size: 0.75rem; font-weight: 700; }
+.pc-avg { font-size: 2rem; font-weight: 900; font-style: italic; color: var(--c); line-height: 1; }
+.pc-avg small { font-size: 0.8rem; font-style: normal; color: var(--muted); font-weight: 800; margin-left: 4px; }
+.tile-key b { color: var(--accent); font-size: 1.5rem; }
+.gr-score small { font-weight: 800; }

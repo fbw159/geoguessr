@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Einstieg: Spielerauswahl, Spiel-Setup, Bestenliste, Einstellungen
 // ---------------------------------------------------------------------------
-import { DEFAULT_PREFS, MAPS, PLAYER_COLORS, PLAYER_EMOJIS, REPO, SITE_URL } from './config.js';
+import { DEFAULT_PREFS, MAPS, MAX_ROUND_SCORE, MIN_GUESSES_FOR_RANK, PLAYER_COLORS, PLAYER_EMOJIS, REPO, SITE_URL } from './config.js';
 import { $, $$, b64url, copyText, countryName, esc, flagImg, fmtDate, fmtDist, fmtNum, fmtTime, lsGet, lsSet, unb64url } from './util.js';
 import { countryList, getMap, loadLocations, pool } from './locations.js';
 import * as store from './storage.js';
@@ -13,7 +13,7 @@ let currentPlayerId = lsGet('gg.player', null);
 let challenge = null;
 let keyFromLink = false;
 let locationsReady = false;
-let lbSort = 'total';
+let lbSort = 'avgRound';
 
 const TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?' + new URLSearchParams({
   name: 'GeoGuessr Spielstaende',
@@ -138,6 +138,12 @@ const currentPlayer = () => store.view().players.find(p => p.id === currentPlaye
 const medal = r => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : `#${r}`;
 
 // ============================== Statistik ==============================
+// Rangfolge nach Ø pro Guess; Platz erst ab MIN_GUESSES_FOR_RANK Guesses
+function rankByAverage(stats) {
+  return stats.filter(s => s.rounds >= MIN_GUESSES_FOR_RANK)
+    .sort((a, b) => (b.avgRound - a.avgRound) || (b.rounds - a.rounds));
+}
+
 function playerStats(db, mapFilter = null) {
   const by = new Map(db.players.map(p => [p.id, {
     player: p, total: 0, games: 0, rounds: 0, bestPct: 0, best: 0, bestMax: 0, perfect: 0, distSum: 0, distN: 0, last: null,
@@ -150,10 +156,10 @@ function playerStats(db, mapFilter = null) {
     s.total += g.score || 0;
     s.games++;
     s.rounds += n;
-    const pct = n ? g.score / (n * 5000) : 0;
-    if (pct > s.bestPct || (pct === s.bestPct && g.score > s.best)) { s.bestPct = pct; s.best = g.score; s.bestMax = n * 5000; }
+    const pct = n ? g.score / (n * MAX_ROUND_SCORE) : 0;
+    if (pct > s.bestPct || (pct === s.bestPct && g.score > s.best)) { s.bestPct = pct; s.best = g.score; s.bestMax = n * MAX_ROUND_SCORE; }
     for (const r of g.rounds || []) {
-      if (r.s >= 4990) s.perfect++;
+      if (r.s >= MAX_ROUND_SCORE) s.perfect++;
       if (r.d != null) { s.distSum += r.d; s.distN++; }
     }
     if (!s.last || g.date > s.last) s.last = g.date;
@@ -187,7 +193,7 @@ function renderHome() {
   const db = store.view();
   const st = store.status();
   const stats = playerStats(db);
-  const ranked = stats.filter(s => s.games).sort((a, b) => b.total - a.total);
+  const ranked = rankByAverage(stats);
   const rankOf = id => ranked.findIndex(s => s.player.id === id) + 1;
   const statOf = id => stats.find(s => s.player.id === id);
   const grid = $('#player-grid');
@@ -201,10 +207,11 @@ function renderHome() {
       const last = p.id === currentPlayerId;
       return `
         <button class="player-card${last ? ' last' : ''}" data-pid="${esc(p.id)}" style="--c:${esc(p.color)}">
-          ${r ? `<span class="pc-rank" title="Platz ${r} nach Gesamtpunkten">${medal(r)}</span>` : ''}
+          ${r ? `<span class="pc-rank" title="Platz ${r} nach Ø Punkten pro Guess">${medal(r)}</span>` : ''}
           ${avatar(p, 'lg')}
           <span class="pc-name">${esc(p.name)}</span>
-          <span class="pc-stats"><b>${fmtNum(s.total)}</b> Punkte · ${s.games} ${s.games === 1 ? 'Spiel' : 'Spiele'}</span>
+          ${s.rounds ? `<span class="pc-avg" title="Durchschnittliche Punkte pro Guess (max. 100)">${fmtNum(s.avgRound)}<small>Ø pro Guess</small></span>` : ''}
+          <span class="pc-stats">${s.rounds ? `${fmtNum(s.rounds)} ${s.rounds === 1 ? 'Guess' : 'Guesses'} · ${s.games} ${s.games === 1 ? 'Spiel' : 'Spiele'}` : 'noch nicht gespielt'}</span>
           ${last ? '<span class="pc-last">zuletzt gespielt</span>' : ''}
         </button>`;
     }).join('') + `
@@ -367,21 +374,30 @@ function renderLeaderboard() {
 
   const stats = playerStats(db, filter);
   const val = s => s[lbSort];
-  const played = stats.filter(s => s.games).sort((a, b) => {
-    if (lbSort === 'avgDist') return (a.avgDist ?? 1e12) - (b.avgDist ?? 1e12);
-    if (lbSort === 'best') return b.bestPct - a.bestPct;
-    return (val(b) - val(a)) || (b.total - a.total);
-  });
+  let played;
+  if (lbSort === 'avgRound') {
+    // Ø pro Guess: Platz erst ab MIN_GUESSES_FOR_RANK, danach die übrigen (ohne Platz)
+    const ranked = rankByAverage(stats);
+    const rest = stats.filter(s => s.games && !ranked.includes(s)).sort((a, b) => b.avgRound - a.avgRound);
+    played = [...ranked.map((s, i) => ({ s, rank: i + 1 })), ...rest.map(s => ({ s, rank: 0 }))];
+  } else {
+    played = stats.filter(s => s.games).sort((a, b) => {
+      if (lbSort === 'avgDist') return (a.avgDist ?? 1e12) - (b.avgDist ?? 1e12);
+      if (lbSort === 'best') return b.bestPct - a.bestPct;
+      return (val(b) - val(a)) || (b.avgRound - a.avgRound);
+    }).map((s, i) => ({ s, rank: i + 1 }));
+  }
   const idle = filter ? [] : stats.filter(s => !s.games);
 
   $$('.lb-table th[data-sort]').forEach(th => th.classList.toggle('sorted', th.dataset.sort === lbSort));
-  $('#lb-body').innerHTML = played.map((s, i) => `
+  $('#lb-body').innerHTML = played.map(({ s, rank }) => `
     <tr data-profile="${esc(s.player.id)}" class="clickable">
-      <td class="td-rank">${medal(i + 1)}</td>
+      <td class="td-rank">${rank ? medal(rank) : `<span class="muted rank-note" title="Platz ab ${MIN_GUESSES_FOR_RANK} Guesses">–</span>`}</td>
       <td><span class="cell-player">${avatar(s.player, 'sm')}<span>${esc(s.player.name)}</span></span></td>
-      <td class="num strong">${fmtNum(s.total)}</td>
+      <td class="num key-val">${fmtNum(s.avgRound)}</td>
+      <td class="num">${fmtNum(s.rounds)}${!rank && lbSort === 'avgRound' ? ` <span class="muted rank-note">(ab ${MIN_GUESSES_FOR_RANK})</span>` : ''}</td>
       <td class="num">${s.games}</td>
-      <td class="num">${fmtNum(s.avgRound)}</td>
+      <td class="num">${fmtNum(s.total)}</td>
       <td class="num">${Math.round(s.bestPct * 100)} % <span class="muted small">(${fmtNum(s.best)})</span></td>
       <td class="num">${s.perfect}</td>
       <td class="num">${fmtDist(s.avgDist)}</td>
@@ -389,8 +405,8 @@ function renderLeaderboard() {
     <tr data-profile="${esc(s.player.id)}" class="clickable idle">
       <td class="td-rank">–</td>
       <td><span class="cell-player">${avatar(s.player, 'sm')}<span>${esc(s.player.name)}</span></span></td>
-      <td class="num muted" colspan="6">noch keine Spiele</td>
-    </tr>`).join('') || '<tr><td colspan="8" class="muted center">Noch keine Spiele – los geht’s!</td></tr>';
+      <td class="num muted" colspan="7">noch keine Spiele</td>
+    </tr>`).join('') || '<tr><td colspan="9" class="muted center">Noch keine Spiele – los geht’s!</td></tr>';
 
   const games = db.games.filter(g => !filter || g.map === filter).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 25);
   const pl = id => db.players.find(p => p.id === id);
@@ -401,9 +417,9 @@ function renderLeaderboard() {
       <button class="game-row" data-game="${esc(g.id)}">
         ${avatar(p, 'sm')}
         <span class="gr-name">${esc(p?.name || '?')}</span>
-        <span class="gr-map">${esc(g.mapName || getMap(g.map).name)}${g.mode === 'nmpz' ? ' · NMPZ' : ''}${g.challenge ? ' · 🎯' : ''}</span>
+        <span class="gr-map">${esc(g.mapName || getMap(g.map).name)} · ${g.rounds.length}${g.endless ? ' (∞)' : ''} R.${g.mode === 'nmpz' ? ' · NMPZ' : ''}${g.challenge ? ' · 🎯' : ''}</span>
         <span class="gr-bar"><span style="width:${Math.round(pct * 100)}%"></span></span>
-        <span class="gr-score">${fmtNum(g.score)}</span>
+        <span class="gr-score">${fmtNum(g.score)} <small class="muted">Ø ${fmtNum(g.score / Math.max(1, g.rounds.length))}</small></span>
         <span class="gr-date muted">${fmtDate(g.date)}</span>
       </button>`;
   }).join('') || '<p class="muted">Noch keine Spiele.</p>';
@@ -439,9 +455,9 @@ function profileDialog(pid) {
   openModal(`
     <div class="profile-head">${avatar(p, 'lg')}<div><h2 class="modal-title">${esc(p.name)}</h2><div class="muted">dabei seit ${fmtDate(p.created).split(',')[0]}</div></div></div>
     <div class="tiles">
+      <div class="tile tile-key"><b>${fmtNum(s.avgRound)}</b><span>Ø pro Guess</span></div>
+      <div class="tile"><b>${fmtNum(s.rounds)}</b><span>Guesses (${s.games} ${s.games === 1 ? 'Spiel' : 'Spiele'})</span></div>
       <div class="tile"><b>${fmtNum(s.total)}</b><span>Gesamtpunkte</span></div>
-      <div class="tile"><b>${s.games}</b><span>Spiele</span></div>
-      <div class="tile"><b>${fmtNum(s.avgRound)}</b><span>Ø pro Runde</span></div>
       <div class="tile"><b>${s.perfect}</b><span>Volltreffer</span></div>
       <div class="tile"><b>${fmtDist(s.avgDist)}</b><span>Ø Entfernung</span></div>
       <div class="tile"><b>${esc(favMap || '–')}</b><span>Lieblingskarte</span></div>
@@ -449,9 +465,9 @@ function profileDialog(pid) {
     <h3 class="h3">Letzte Spiele</h3>
     <div class="profile-games">${games.slice(0, 30).map(g => `
       <button class="game-row" data-game="${esc(g.id)}">
-        <span class="gr-map">${esc(g.mapName || g.map)}${g.mode === 'nmpz' ? ' · NMPZ' : ''}</span>
+        <span class="gr-map">${esc(g.mapName || g.map)} · ${g.rounds.length}${g.endless ? ' (∞)' : ''} R.${g.mode === 'nmpz' ? ' · NMPZ' : ''}</span>
         <span class="gr-bar"><span style="width:${Math.round((g.max ? g.score / g.max : 0) * 100)}%"></span></span>
-        <span class="gr-score">${fmtNum(g.score)}</span>
+        <span class="gr-score">${fmtNum(g.score)} <small class="muted">Ø ${fmtNum(g.score / Math.max(1, g.rounds.length))}</small></span>
         <span class="gr-date muted">${fmtDate(g.date)}</span>
       </button>`).join('') || '<p class="muted">Noch keine Spiele.</p>'}</div>
     <div class="modal-actions"><button class="btn btn-primary" data-x>Schließen</button></div>`, (root, close) => {
@@ -468,7 +484,7 @@ function gameDialog(gid) {
   const chUrl = g.seed ? `${SITE_URL}#c=${b64url({ m: g.map, r: g.rounds.length, t: g.time, mo: g.mode, s: g.seed, n: p?.name, p: g.score })}` : null;
   openModal(`
     <div class="profile-head">${avatar(p, 'md')}<div><h2 class="modal-title">${fmtNum(g.score)} <small class="muted">/ ${fmtNum(g.max)}</small></h2>
-      <div class="muted">${esc(p?.name || '?')} · ${esc(g.mapName || g.map)} · ${fmtDate(g.date)}${g.mode === 'nmpz' ? ' · NMPZ' : ''}${g.time ? ` · ${fmtTime(g.time)} min` : ''}</div></div></div>
+      <div class="muted">${esc(p?.name || '?')} · ${esc(g.mapName || g.map)} · ${g.rounds.length} Runden${g.endless ? ' (Endlos)' : ''} · Ø ${fmtNum(g.score / Math.max(1, g.rounds.length))} pro Guess · ${fmtDate(g.date)}${g.mode === 'nmpz' ? ' · NMPZ' : ''}${g.time ? ` · ${fmtTime(g.time)} min` : ''}</div></div></div>
     <table class="rounds-table">
       <thead><tr><th>#</th><th>Ort</th><th>Entfernung</th><th>Punkte</th></tr></thead>
       <tbody>${g.rounds.map((r, i) => `<tr><td>${i + 1}</td><td><span class="cell-place">${flagImg(r.cc)}${esc(countryName(r.cc))}</span></td><td>${r.g ? fmtDist(r.d) : '<span class="muted">kein Tipp</span>'}</td><td class="td-score">${fmtNum(r.s)}</td></tr>`).join('')}</tbody>

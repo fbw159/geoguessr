@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Spiellogik: Street View, Rate-Karte, Timer, Rundenergebnis, Spielende
 // ---------------------------------------------------------------------------
-import { MAX_ROUND_SCORE, SITE_URL } from './config.js';
+import { MAX_ROUND_SCORE, POINTS_VERSION, SITE_URL } from './config.js';
 import { $, b64url, copyText, countryName, esc, flagImg, fmtDist, fmtNum, fmtTime, haversine, lsGet, lsSet, uid } from './util.js';
 import { boundsOf, getMap, makePicker, maxDist, scoreFor } from './locations.js';
 import * as store from './storage.js';
@@ -23,6 +23,8 @@ const panel = { pinned: lsGet('gg.mapPinned', false), level: lsGet('gg.mapLevel'
 let navigate = () => {};
 
 const r5 = x => Math.round(x * 1e5) / 1e5;
+// Schnelleres Zoomen mit Mausrad/Trackpad (Leaflet-Standard ist 60 px pro Stufe)
+const ZOOM_OPTS = { zoomSnap: 0.25, wheelPxPerZoomLevel: 22, wheelDebounceTime: 25, minZoom: 1 };
 
 export function initGame(opts) {
   navigate = opts.navigate;
@@ -35,17 +37,21 @@ export function startGame({ player, mapId, rounds, time, mode, seed, challenge =
   seed = seed || uid('s');
   const recent = new Set(lsGet('gg.recent', []));
   const picker = makePicker(mapId, seed, isChallenge ? null : recent);
-  const locs = Array.from({ length: rounds }, () => picker());
+  const endless = !rounds;
+  const locs = endless ? [picker()] : Array.from({ length: rounds }, () => picker());
   G = {
-    id: uid('g'), player, mapId, map: getMap(mapId), rounds, time, mode, seed, challenge,
+    id: uid('g'), player, mapId, map: getMap(mapId), rounds: endless ? 0 : rounds, endless, time, mode, seed, challenge,
     picker, locs, idx: 0, results: [], maxD: maxDist(mapId), guess: null, locked: false, roundStart: 0,
   };
+  $('#btn-stop').classList.toggle('hidden', !endless);
+  $('#btn-stop-result').classList.toggle('hidden', !endless);
   show('game');
   initGuessMap();
   startRound();
 }
 
 function startRound() {
+  if (!G.locs[G.idx]) G.locs[G.idx] = G.picker(); // Endlos: nächster Ort erst bei Bedarf
   G.guess = null;
   G.locked = false;
   if (guessMarker) { guessMarker.remove(); guessMarker = null; }
@@ -84,7 +90,7 @@ function updateHud() {
   const total = G.results.reduce((a, x) => a + x.s, 0);
   $('#hud-player').innerHTML = `${avatar(G.player, 'sm')}<span>${esc(G.player.name)}</span>`;
   $('#hud-map').textContent = G.map.name;
-  $('#hud-round').textContent = `${G.idx + 1} / ${G.rounds}`;
+  $('#hud-round').textContent = G.endless ? `${G.idx + 1} / ∞` : `${G.idx + 1} / ${G.rounds}`;
   $('#hud-score').textContent = fmtNum(total);
 }
 
@@ -116,7 +122,7 @@ const actualIcon = (label = '') => L.divIcon({
 
 function initGuessMap() {
   if (!gmap) {
-    gmap = L.map('guess-map', { zoomControl: false, worldCopyJump: true, minZoom: 1, zoomSnap: 0.25, wheelPxPerZoomLevel: 90 });
+    gmap = L.map('guess-map', { ...ZOOM_OPTS, zoomControl: false, worldCopyJump: true });
     L.tileLayer(TILE_URL, TILE_OPTS).addTo(gmap);
     gmap.attributionControl.setPrefix(false);
     gmap.on('click', e => setGuess(e.latlng));
@@ -174,13 +180,13 @@ function submitGuess(timeout = false) {
 
 function ensureMap(which) {
   if (which === 'result' && !rmap) {
-    rmap = L.map('result-map', { worldCopyJump: false, zoomSnap: 0.25, minZoom: 1 });
+    rmap = L.map('result-map', { ...ZOOM_OPTS, worldCopyJump: false });
     L.tileLayer(TILE_URL, TILE_OPTS).addTo(rmap);
     rmap.attributionControl.setPrefix(false);
     rLayer = L.layerGroup().addTo(rmap);
   }
   if (which === 'final' && !fmap) {
-    fmap = L.map('final-map', { worldCopyJump: false, zoomSnap: 0.25, minZoom: 1 });
+    fmap = L.map('final-map', { ...ZOOM_OPTS, worldCopyJump: false });
     L.tileLayer(TILE_URL, TILE_OPTS).addTo(fmap);
     fmap.attributionControl.setPrefix(false);
     fLayer = L.layerGroup().addTo(fmap);
@@ -213,9 +219,9 @@ function showResult(r) {
     ? `Dein Tipp war <b>${fmtDist(r.d)}</b> vom Ziel entfernt.`
     : 'Kein Pin gesetzt – diese Runde gibt es 0 Punkte.';
   animateBar($('#result-bar'), (r.s / MAX_ROUND_SCORE) * 100);
-  $('#result-place').innerHTML = `${flagImg(r.cc)}<span class="place-name">${esc(countryName(r.cc))}</span><span class="muted">Runde ${G.idx + 1}/${G.rounds} · Gesamt ${fmtNum(total)}</span>`;
+  $('#result-place').innerHTML = `${flagImg(r.cc)}<span class="place-name">${esc(countryName(r.cc))}</span><span class="muted">Runde ${G.idx + 1}${G.endless ? '' : `/${G.rounds}`} · Gesamt ${fmtNum(total)} · Ø ${fmtNum(total / G.results.length)}</span>`;
   $('#result-gmaps').href = gmapsLink(r);
-  $('#btn-next').textContent = G.idx + 1 >= G.rounds ? 'Ergebnis anzeigen' : 'Nächste Runde';
+  $('#btn-next').textContent = !G.endless && G.idx + 1 >= G.rounds ? 'Ergebnis anzeigen' : 'Nächste Runde';
 
   ensureMap('result');
   rLayer.clearLayers();
@@ -237,15 +243,17 @@ function nextRound() {
   if (!G || currentScreen() !== 'result') return;
   if (Date.now() - (G.resultAt || 0) < 400) return; // Doppelklick-Schutz
   G.idx++;
-  if (G.idx >= G.rounds) { finishGame(); return; }
+  if (!G.endless && G.idx >= G.rounds) { finishGame(); return; }
   show('game');
   startRound();
 }
 
 // ----------------------------- Spielende -----------------------------
 async function finishGame() {
+  stopTimer();
+  const n = G.results.length;
   const total = G.results.reduce((a, x) => a + x.s, 0);
-  const max = G.rounds * MAX_ROUND_SCORE;
+  const max = n * MAX_ROUND_SCORE;
   const game = {
     id: G.id,
     player: G.player.id,
@@ -262,15 +270,17 @@ async function finishGame() {
     })),
     score: total,
     max,
+    pv: POINTS_VERSION,
     date: new Date().toISOString(),
   };
+  if (G.endless) game.endless = true;
   if (G.challenge) game.challenge = true;
   G.finished = game;
 
   show('final');
-  $('#final-player').innerHTML = `${avatar(G.player, 'md')}<div><div class="fp-name">${esc(G.player.name)}</div><div class="muted">${esc(G.map.name)} · ${G.rounds} Runden${G.time ? ` · ${fmtTime(G.time)} min` : ''}${G.mode === 'nmpz' ? ' · NMPZ' : ''}</div></div>`;
+  $('#final-player').innerHTML = `${avatar(G.player, 'md')}<div><div class="fp-name">${esc(G.player.name)}</div><div class="muted">${esc(G.map.name)} · ${n} ${n === 1 ? 'Runde' : 'Runden'}${G.endless ? ' (Endlos)' : ''}${G.time ? ` · ${fmtTime(G.time)} min` : ''}${G.mode === 'nmpz' ? ' · NMPZ' : ''}</div></div>`;
   $('#final-score').textContent = fmtNum(total);
-  $('#final-max').textContent = ` / ${fmtNum(max)}`;
+  $('#final-max').textContent = ` / ${fmtNum(max)} · Ø ${fmtNum(total / n)} pro Guess`;
   animateBar($('#final-bar'), (total / max) * 100);
   $('#final-rounds').innerHTML = G.results.map((r, i) => `
     <tr>
@@ -337,7 +347,7 @@ function setSaveStatus(kind) {
 
 function challengeUrl() {
   const g = G.finished;
-  return `${SITE_URL}#c=${b64url({ m: G.mapId, r: G.rounds, t: G.time, mo: G.mode, s: G.seed, n: G.player.name, p: g.score })}`;
+  return `${SITE_URL}#c=${b64url({ m: G.mapId, r: G.results.length, t: G.time, mo: G.mode, s: G.seed, n: G.player.name, p: g.score })}`;
 }
 
 // ----------------------------- Bedienelemente -----------------------------
@@ -360,9 +370,11 @@ function bindControls() {
       navigate('setup');
     }
   };
+  $('#btn-stop').onclick = () => stopEndless();
+  $('#btn-stop-result').onclick = () => stopEndless();
   $('#btn-again').onclick = () => {
     if (!G) return navigate('setup');
-    startGame({ player: G.player, mapId: G.mapId, rounds: G.rounds, time: G.time, mode: G.mode });
+    startGame({ player: G.player, mapId: G.mapId, rounds: G.endless ? 0 : G.rounds, time: G.time, mode: G.mode });
   };
   $('#btn-share').onclick = async () => {
     if (!G?.finished) return;
@@ -372,10 +384,40 @@ function bindControls() {
       (root, close) => { root.querySelector('[data-close]').onclick = close; root.querySelector('input').select(); });
   };
 
-  // Rate-Karte: Hover vergrößert, Pin hält groß, +/- ändert Größe
+  // Rate-Karte: Hover vergrößert, Pin hält groß, +/- ändert Größe.
+  // Kommt der Mauszeiger mit gedrückter Taste herein (man dreht gerade Street View),
+  // wird die Karte kurz "durchlässig" und klappt nicht auf – so reißt das Ziehen nicht ab.
   const p = $('#guess-panel');
-  p.addEventListener('mouseenter', () => { clearTimeout(hideTimer); panel.hover = true; applyPanel(); });
-  p.addEventListener('mouseleave', () => { clearTimeout(hideTimer); hideTimer = setTimeout(() => { panel.hover = false; applyPanel(); }, 700); });
+  let openTimer = null, passTimer = null, pressedInside = false;
+  const passThrough = () => {
+    clearTimeout(openTimer);
+    p.classList.add('passthrough');
+    clearTimeout(passTimer);
+    passTimer = setTimeout(() => p.classList.remove('passthrough'), 350);
+  };
+  p.addEventListener('pointerdown', () => { pressedInside = true; });
+  window.addEventListener('pointerup', () => {
+    if (pressedInside && !p.matches(':hover')) {
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => { panel.hover = false; applyPanel(); }, 700);
+    }
+    pressedInside = false;
+  }, true);
+  window.addEventListener('blur', () => { pressedInside = false; });
+  p.addEventListener('pointerenter', e => {
+    if (e.buttons && !pressedInside) { passThrough(); return; }
+    clearTimeout(hideTimer);
+    if (panel.hover) return;
+    clearTimeout(openTimer);
+    openTimer = setTimeout(() => { panel.hover = true; applyPanel(); }, 150);
+  });
+  p.addEventListener('pointermove', e => { if (e.buttons && !pressedInside) passThrough(); });
+  p.addEventListener('pointerleave', () => {
+    clearTimeout(openTimer);
+    clearTimeout(hideTimer);
+    if (pressedInside) return; // Karte wird gerade verschoben → offen lassen
+    hideTimer = setTimeout(() => { panel.hover = false; applyPanel(); }, 700);
+  });
   $('#gp-pin').onclick = () => { panel.pinned = !panel.pinned; lsSet('gg.mapPinned', panel.pinned); applyPanel(); };
   $('#gp-bigger').onclick = () => { panel.level = Math.min(3, panel.level + 1); lsSet('gg.mapLevel', panel.level); applyPanel(); };
   $('#gp-smaller').onclick = () => { panel.level = Math.max(0, panel.level - 1); lsSet('gg.mapLevel', panel.level); applyPanel(); };
@@ -387,6 +429,28 @@ function bindControls() {
     if (s === 'game' && G?.guess && !G.locked) { e.preventDefault(); submitGuess(); }
     else if (s === 'result') { e.preventDefault(); nextRound(); }
   });
+}
+
+// Endlos-Modus: Spiel beenden und die bisherigen Runden speichern
+async function stopEndless() {
+  if (!G || !G.endless || G.finished) return;
+  if (!G.results.length) {
+    if (await confirmDialog('Noch keine Runde geraten – Spiel ohne Speichern beenden?', { ok: 'Beenden', cancel: 'Weiterspielen' })) {
+      stopTimer();
+      G = null;
+      $('#sv-frame').src = 'about:blank';
+      navigate('setup');
+    }
+    return;
+  }
+  if (currentScreen() === 'game' && !G.locked) {
+    const n = G.results.length;
+    const ok = await confirmDialog(`Spiel beenden und die ${n} ${n === 1 ? 'geratene Runde' : 'geratenen Runden'} speichern? Die aktuelle Runde zählt nicht.`, { ok: 'Beenden & speichern', cancel: 'Weiterspielen' });
+    if (!ok || !G || G.finished) return;
+    // Lief während der Rückfrage die Zeit ab, zählt diese Runde nicht
+    if (G.results.length > n) G.results.length = n;
+  }
+  finishGame();
 }
 
 export const gameActive = () => !!G && !G.finished;

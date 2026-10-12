@@ -58,7 +58,7 @@
         <div class="opt">
           <span class="opt-label">Runden</span>
           <div class="seg" data-opt="rounds">
-            <button data-v="3">3</button><button data-v="5">5</button><button data-v="10">10</button>
+            <button data-v="3">3</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="0" title="So lange spielen, wie ihr wollt – im Spiel mit „Beenden“ aufhören">∞ Endlos</button>
           </div>
         </div>
         <div class="opt">
@@ -101,6 +101,7 @@
         <button class="chip" id="btn-reset-view" title="Zurück zum Startpunkt">⟲ Zum Start</button>
         <button class="chip" id="btn-skip" title="Falls das Bild nicht lädt: anderen Ort nehmen">↻ Neuer Ort</button>
         <button class="chip" data-fs title="Vollbild an/aus">⛶</button>
+        <button class="chip chip-stop hidden" id="btn-stop" title="Endlos-Spiel beenden und speichern">🏁 Beenden</button>
         <button class="chip chip-danger" id="btn-quit" title="Spiel abbrechen (wird nicht gespeichert)">✕</button>
       </div>
     </div>
@@ -131,6 +132,7 @@
         <div id="result-place" class="result-place"></div>
         <div class="result-actions">
           <a id="result-gmaps" class="btn btn-ghost" target="_blank" rel="noopener">In Google Maps ansehen ↗</a>
+          <button id="btn-stop-result" class="btn btn-ghost hidden">🏁 Spiel beenden</button>
           <button id="btn-next" class="btn btn-primary">Nächste Runde</button>
         </div>
       </div>
@@ -171,6 +173,7 @@
     </header>
     <main class="lb-main">
       <h1 class="headline">Bestenliste</h1>
+      <p class="muted lb-hint">Sortiert nach <b>Ø pro Guess</b> (0–100): durchschnittliche Punkte pro geratenem Ort – so sind Spieler vergleichbar, egal ob sie 3, 10 oder endlos viele Runden spielen. Einen Platz gibt es ab 10 Guesses. Spalten lassen sich per Klick sortieren.</p>
       <div class="lb-filter">
         <label for="lb-map">Karte:</label>
         <select id="lb-map"></select>
@@ -181,11 +184,12 @@
             <tr>
               <th>#</th>
               <th>Spieler</th>
-              <th data-sort="total" class="sortable">Gesamtpunkte</th>
+              <th data-sort="avgRound" class="sortable key-col" title="Durchschnittliche Punkte pro Guess (max. 100) – der fairste Vergleich, egal wie viele Runden gespielt wurden. Platz gibt es ab 10 Guesses.">Ø pro Guess</th>
+              <th data-sort="rounds" class="sortable" title="Anzahl aller geratenen Orte">Guesses</th>
               <th data-sort="games" class="sortable">Spiele</th>
-              <th data-sort="avgRound" class="sortable" title="Durchschnittliche Punkte pro Runde (max. 5.000)">Ø / Runde</th>
+              <th data-sort="total" class="sortable">Gesamtpunkte</th>
               <th data-sort="best" class="sortable" title="Bestes Spiel (in Prozent der möglichen Punkte)">Bestes Spiel</th>
-              <th data-sort="perfect" class="sortable" title="Runden mit 4.990+ Punkten">Volltreffer</th>
+              <th data-sort="perfect" class="sortable" title="Guesses mit vollen 100 Punkten">Volltreffer</th>
               <th data-sort="avgDist" class="sortable" title="Durchschnittliche Entfernung">Ø Entfernung</th>
             </tr>
           </thead>

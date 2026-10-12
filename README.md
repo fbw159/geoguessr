@@ -26,7 +26,7 @@ Ohne Schlüssel wird ein Spiel lokal im Browser gesichert und automatisch hochge
 
 - Reines HTML/CSS/JavaScript, gehostet über GitHub Pages – kein Server, kein Build.
 - Street View über den Google-Maps-Embed (ohne API-Key) mit festen Panorama-IDs.
-- Rate-Karte: [Leaflet](https://leafletjs.com/) mit Kacheln von © OpenStreetMap-Mitwirkende / © CARTO.
+- Rate-Karte: [Leaflet](https://leafletjs.com/) mit Kacheln von openstreetmap.de (© OpenStreetMap-Mitwirkende).
 - Orte: ~26.000 Panoramen aus dem Datensatz von [WorldGuessr](https://github.com/codergautam/worldguessr)
   (PolyForm Noncommercial – hier rein privat genutzt). Deutschland, Österreich und Schweiz komplett, der Rest als Stichprobe.
 - Punkteformel wie bei GeoGuessr: `5000 · e^(−10 · Entfernung / Kartengröße)`.

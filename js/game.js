@@ -7,11 +7,11 @@ import { boundsOf, getMap, makePicker, maxDist, scoreFor } from './locations.js'
 import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, modalOpen, openModal, show, toast } from './ui.js';
 
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+// Kartenkacheln: OpenStreetMap im deutschen Stil (deutsche Ortsnamen)
+const TILE_URL = 'https://tile.openstreetmap.de/{z}/{x}/{y}.png';
 const TILE_OPTS = {
-  subdomains: 'abcd',
-  maxZoom: 19,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> · © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
+  maxZoom: 18,
+  attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-Mitwirkende',
 };
 
 let G = null;               // laufendes Spiel

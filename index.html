@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GeoGuessr · Freunde-Edition</title>
   <meta name="description" content="Privates GeoGuessr für Freunde – mit Spielern und gespeicherten Punkteständen.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a1446">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
@@ -21,6 +25,7 @@
         <button class="navbtn" data-nav="leaderboard">🏆 Bestenliste</button>
         <button class="navbtn" data-nav="settings">⚙️ Einstellungen</button>
         <span id="sync-badge" class="sync-badge" title="Speicherstatus"></span>
+        <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
       </nav>
     </header>
     <main class="home-main">
@@ -38,6 +43,7 @@
       <nav class="topnav">
         <div id="setup-player" class="current-player"></div>
         <button class="navbtn" data-nav="home">Spieler wechseln</button>
+        <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
       </nav>
     </header>
     <main class="setup-main">
@@ -94,6 +100,7 @@
       <div class="hud-actions">
         <button class="chip" id="btn-reset-view" title="Zurück zum Startpunkt">⟲ Zum Start</button>
         <button class="chip" id="btn-skip" title="Falls das Bild nicht lädt: anderen Ort nehmen">↻ Neuer Ort</button>
+        <button class="chip" data-fs title="Vollbild an/aus">⛶</button>
         <button class="chip chip-danger" id="btn-quit" title="Spiel abbrechen (wird nicht gespeichert)">✕</button>
       </div>
     </div>
@@ -159,6 +166,7 @@
       <nav class="topnav">
         <button class="navbtn" data-nav="home">← Zurück</button>
         <button class="navbtn" id="btn-refresh" title="Neu laden">⟳ Aktualisieren</button>
+        <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
       </nav>
     </header>
     <main class="lb-main">
@@ -193,7 +201,7 @@
   <section id="screen-settings" class="screen">
     <header class="topbar">
       <a class="brand" href="#" data-nav="home"><span class="brand-globe">🌍</span><span class="brand-text">GEO<b>GUESSR</b></span></a>
-      <nav class="topnav"><button class="navbtn" data-nav="home">← Zurück</button></nav>
+      <nav class="topnav"><button class="navbtn" data-nav="home">← Zurück</button><button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button></nav>
     </header>
     <main class="settings-main">
       <h1 class="headline">Einstellungen</h1>

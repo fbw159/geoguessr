@@ -424,3 +424,5 @@ select.sel { border-color: var(--accent); background: rgba(254, 205, 25, 0.12); 
   .tiles { grid-template-columns: repeat(2, 1fr); }
 }
 .leaflet-container { isolation: isolate; }
+.fs-btn { padding: 9px 13px; font-size: 1.05rem; line-height: 1; }
+[data-fs].on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }

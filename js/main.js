@@ -27,6 +27,7 @@ async function boot() {
   readHash();
   initGame({ navigate });
   bindNav();
+  bindFullscreen();
   bindSetup();
   bindLeaderboard();
   bindSettings();
@@ -63,7 +64,12 @@ function readHash() {
   if (!location.hash || location.hash.length < 3) return false;
   const h = new URLSearchParams(location.hash.slice(1));
   let handled = false;
-  if (h.get('key')) { store.setKey(h.get('key')); keyFromLink = true; handled = true; }
+  if (h.get('key')) {
+    const k = h.get('key').trim();
+    // Gleicher Schlüssel wie schon gespeichert → nichts tun (Link darf beliebig oft geöffnet werden)
+    if (k !== store.getKey()) { store.setKey(k); keyFromLink = true; }
+    handled = true;
+  }
   if (h.get('c')) {
     try {
       const c = unb64url(h.get('c'));
@@ -82,6 +88,31 @@ function navigate(screen) {
   if (screen === 'leaderboard') renderLeaderboard();
   if (screen === 'settings') renderSettings();
   show(screen);
+}
+
+// Vollbild: Knöpfe mit [data-fs]; mit ?vollbild in der Adresse geht es beim ersten Klick automatisch in den Vollbildmodus
+function bindFullscreen() {
+  const supported = !!document.documentElement.requestFullscreen;
+  const update = () => $$('[data-fs]').forEach(b => {
+    b.classList.toggle('on', !!document.fullscreenElement);
+    b.title = document.fullscreenElement ? 'Vollbild beenden' : 'Vollbild';
+  });
+  if (!supported) { $$('[data-fs]').forEach(b => b.classList.add('hidden')); return; }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('[data-fs]')) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else document.documentElement.requestFullscreen().catch(() => {});
+  });
+  document.addEventListener('fullscreenchange', update);
+  if (new URLSearchParams(location.search).has('vollbild')) {
+    const go = e => {
+      if (e.target.closest?.('[data-fs]')) return;
+      document.removeEventListener('pointerdown', go, true);
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    };
+    document.addEventListener('pointerdown', go, true);
+  }
+  update();
 }
 
 function bindNav() {

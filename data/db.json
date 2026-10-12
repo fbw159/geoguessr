@@ -1,7 +1,8 @@
 {
  "version": 1,
  "players": [
-  {"id":"p_ltt","name":"LTT","color":"#fecd19","emoji":"🧭","created":"2026-10-12T18:00:00.000Z"}
+  {"id":"p_ltt","name":"LTT","color":"#fecd19","emoji":"🧭","created":"2026-10-12T18:00:00.000Z"},
+  {"id":"pmv5nigxd3q6d215x","name":"Börje","color":"#fecd19","emoji":"😎","created":"2026-10-12T19:34:46.322Z"}
  ],
  "games": [
 

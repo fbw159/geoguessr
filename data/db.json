@@ -3,7 +3,8 @@
  "players": [
   {"id":"p_ltt","name":"LTT","color":"#fecd19","emoji":"🧭","created":"2026-10-12T18:00:00.000Z"},
   {"id":"pmv5nigxd3q6d215x","name":"Börje","color":"#fecd19","emoji":"😎","created":"2026-10-12T19:34:46.322Z"},
-  {"id":"pmv5ox1j6506w044q","name":"Josie","color":"#b5179e","emoji":"🐼","created":"2026-10-12T20:14:05.826Z"}
+  {"id":"pmv5ox1j6506w044q","name":"Josie","color":"#b5179e","emoji":"🐼","created":"2026-10-12T20:14:05.826Z"},
+  {"id":"pmv6a2ri7402u2743","name":"Moritz","color":"#b5179e","emoji":"🐸","created":"2026-10-13T06:06:24.703Z"}
  ],
  "games": [
 

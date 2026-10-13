@@ -19,7 +19,6 @@ import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, onLeave, openModal, show, toast } from './ui.js';
 import { Overlay, actualMarkerEl, createMap, fitPoints, guessMarkerEl, nearCopy } from './maps.js';
 import * as play from './playview.js';
-import { showPointsInfo } from './info.js';
 
 const MATCH_DIR = 'data/matches';
 const COMP_FILE = 'data/competitions.json';
@@ -170,7 +169,6 @@ function bindHub() {
   $('#cj-join').onclick = join;
   $('#cj-code').onkeydown = e => { if (e.key === 'Enter') join(); };
   $('#comp-refresh').onclick = loadHubData;
-  $('#comp-info').onclick = () => showPointsInfo('comp');
   $('#cj-wait').onclick = () => startWaiting();
   $('#cj-roomlink').onclick = () => copyRoomLink();
   $('#cw-stop').onclick = () => stopWaiting();

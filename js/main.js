@@ -9,7 +9,7 @@ import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './
 import { gameActive, initGame, startGame } from './game.js';
 import { initPlayView } from './playview.js';
 import { compActive, copyRoomLink, initCompetition, openMatch, renderHub, waitForLobby } from './competition.js';
-import { renderInfoBox, showPointsInfo } from './info.js';
+import { renderInfoBox } from './info.js';
 
 const prefs = { ...DEFAULT_PREFS, ...lsGet('gg.prefs', {}) };
 let currentPlayerId = lsGet('gg.player', null);
@@ -371,7 +371,6 @@ function bindSetup() {
     prefs[k] = k === 'mode' ? b.dataset.v : Number(b.dataset.v);
     savePrefs();
   }));
-  $('#setup-info').onclick = () => showPointsInfo('normal', prefs.map);
   $('#btn-start').onclick = () => {
     const p = currentPlayer();
     if (!p || !locationsReady) return;

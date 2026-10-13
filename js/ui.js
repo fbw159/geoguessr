@@ -25,6 +25,7 @@ export function toast(msg, type = 'info', ms = 3500) {
 let modalClose = null;
 export function openModal(html, onMount) {
   const m = $('#modal');
+  m.querySelector('.modal-box').className = 'modal-box';
   $('#modal-content').innerHTML = html;
   m.classList.remove('hidden');
   const close = () => { m.classList.add('hidden'); $('#modal-content').innerHTML = ''; modalClose = null; };

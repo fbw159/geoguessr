@@ -9,6 +9,7 @@ import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './
 import { gameActive, initGame, startGame } from './game.js';
 import { initPlayView } from './playview.js';
 import { compActive, initCompetition, openMatch, renderHub } from './competition.js';
+import { renderInfoBox, showPointsInfo } from './info.js';
 
 const prefs = { ...DEFAULT_PREFS, ...lsGet('gg.prefs', {}) };
 let currentPlayerId = lsGet('gg.player', null);
@@ -48,7 +49,7 @@ async function boot() {
   renderSyncBadge();
 
   loadLocations()
-    .then(() => { locationsReady = true; if (currentScreen() === 'setup') renderSetup(); })
+    .then(() => { locationsReady = true; renderInfoBox($('#points-info')); if (currentScreen() === 'setup') renderSetup(); })
     .catch(e => toast(`Orte konnten nicht geladen werden: ${esc(e.message)}`, 'error', 10000));
 
   await store.refresh();
@@ -366,6 +367,7 @@ function bindSetup() {
     prefs[k] = k === 'mode' ? b.dataset.v : Number(b.dataset.v);
     savePrefs();
   }));
+  $('#setup-info').onclick = () => showPointsInfo('normal', prefs.map);
   $('#btn-start').onclick = () => {
     const p = currentPlayer();
     if (!p || !locationsReady) return;

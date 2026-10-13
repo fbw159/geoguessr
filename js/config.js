@@ -18,6 +18,8 @@ export const MAX_ROUND_SCORE = 100;
 export const POINTS_VERSION = 2;
 // Ab so vielen Guesses bekommt ein Spieler einen Platz in der Rangliste "Ø pro Guess"
 export const MIN_GUESSES_FOR_RANK = 10;
+// Competition Mode: Tempo-Faktor fällt von 100 % (sofort) auf diesen Wert am Zeitlimit
+export const COMP_TIME_FACTOR_MIN = 0.7;
 
 export const PLAYER_COLORS = ['#fecd19', '#6cb928', '#e94560', '#4cc9f0', '#f77f00', '#b5179e', '#00b4a6', '#ff70a6', '#7b61ff', '#8d99ae'];
 export const PLAYER_EMOJIS = ['🧭', '🌍', '🦊', '🐻', '🐼', '🦁', '🐸', '🐙', '🦄', '🐧', '🦉', '🚀', '⚽', '🎸', '🍕', '🌵', '👑', '😎', '🤠', '🗺️'];

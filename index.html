@@ -34,6 +34,7 @@
       <h1 class="headline">Wer spielt?</h1>
       <p class="subline">Wähle deinen Spieler – deine Punkte werden automatisch gespeichert.</p>
       <div id="player-grid" class="player-grid"></div>
+      <section id="points-info" class="info-box card"></section>
     </main>
   </section>
 
@@ -79,6 +80,7 @@
 
       <div class="setup-actions">
         <button id="btn-start" class="btn btn-primary btn-xl">Spiel starten</button>
+        <button class="link-btn" id="setup-info">ℹ️ Wie werden die Punkte berechnet?</button>
       </div>
     </main>
   </section>
@@ -302,10 +304,13 @@
           <h2 class="h2">Beitreten</h2>
           <p class="muted">Code vom Host eingeben – oder einfach den Einladungslink öffnen.</p>
           <div class="row"><input id="cj-code" class="code-input" maxlength="4" placeholder="KX4P" autocomplete="off" spellcheck="false"><button id="cj-join" class="btn btn-primary">Beitreten</button></div>
-          <h3 class="h3">So wird gewertet</h3>
-          <p class="muted">Punkte pro Runde = <b>Genauigkeit</b> (0–100, wie im normalen Spiel) × <b>Tempo-Faktor</b>. Wer sofort tippt, behält 100 %, wer erst am Zeitlimit tippt, 70 %.</p>
-          <p class="muted small">Beispiel: 80 Genauigkeit nach 10 s von 60 s → 76 Punkte, nach 50 s → 60 Punkte.</p>
-          <p class="muted small">Wettkämpfe zählen nur hier – nicht in der normalen Bestenliste.</p>
+          <div class="comp-rules">
+            <h3 class="h3">So wird gewertet</h3>
+            <div class="info-formula small-formula">Punkte = Genauigkeit × Tempo-Faktor</div>
+            <p class="muted">Die <b>Genauigkeit</b> (0–100) zählt wie im normalen Spiel. Der <b>Tempo-Faktor</b> ist 100 %, wenn du sofort tippst, und sinkt bis zum Ende der Rundenzeit auf 70 %.</p>
+            <p class="muted small">Beispiel: 80 Genauigkeit nach 10 von 60 s → 76 Punkte, nach 50 s → 60 Punkte. Wettkämpfe zählen nur hier, nicht in der normalen Bestenliste.</p>
+            <button class="chip" id="comp-info">ℹ️ Alle Details zur Wertung</button>
+          </div>
         </div>
       </div>
       <h2 class="h2">Wettkampf-Bestenliste <button class="chip" id="comp-refresh" title="Neu laden">⟳</button></h2>

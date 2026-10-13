@@ -12,17 +12,17 @@
 // Wertung (Variante A): Punkte = Genauigkeit (0–100) × Tempo-Faktor,
 // Tempo-Faktor fällt linear von 100 % (sofort) auf 70 % (Zeitlimit).
 // ---------------------------------------------------------------------------
-import { MAPS, SITE_URL } from './config.js';
+import { COMP_TIME_FACTOR_MIN as TIME_FACTOR_MIN, MAPS, SITE_URL } from './config.js';
 import { $, $$, copyText, countryName, esc, flagImg, fmtDate, fmtDist, fmtNum, fmtTime, haversine, lsGet, lsSet, uid } from './util.js';
 import { countryList, getMap, loadLocations, makePicker, maxDist, scoreFor } from './locations.js';
 import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './ui.js';
 import { Overlay, actualMarkerEl, createMap, fitPoints, guessMarkerEl, nearCopy } from './maps.js';
 import * as play from './playview.js';
+import { showPointsInfo } from './info.js';
 
 const MATCH_DIR = 'data/matches';
 const COMP_FILE = 'data/competitions.json';
-const TIME_FACTOR_MIN = 0.7;   // am Zeitlimit zählt die Genauigkeit noch zu 70 %
 const START_DELAY = 8000;      // Countdown vor Runde 1 (ms)
 const RESULT_PAUSE = 15000;    // Rundenergebnis bis zur nächsten Runde (ms)
 const GRACE = 4000;            // Puffer nach Zeitablauf für späte Tipps (ms)
@@ -165,6 +165,7 @@ function bindHub() {
   $('#cj-join').onclick = join;
   $('#cj-code').onkeydown = e => { if (e.key === 'Enter') join(); };
   $('#comp-refresh').onclick = loadHubData;
+  $('#comp-info').onclick = () => showPointsInfo('comp');
 }
 
 // ============================== Erstellen & Öffnen ==============================

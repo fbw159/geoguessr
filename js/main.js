@@ -8,7 +8,7 @@ import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './ui.js';
 import { gameActive, initGame, startGame } from './game.js';
 import { initPlayView } from './playview.js';
-import { compActive, initCompetition, openMatch, renderHub } from './competition.js';
+import { compActive, copyRoomLink, initCompetition, openMatch, renderHub, waitForLobby } from './competition.js';
 import { renderInfoBox, showPointsInfo } from './info.js';
 
 const prefs = { ...DEFAULT_PREFS, ...lsGet('gg.prefs', {}) };
@@ -16,6 +16,7 @@ let currentPlayerId = lsGet('gg.player', null);
 let challenge = null;
 let keyFromLink = false;
 let pendingMatch = null;
+let pendingRoom = false;
 let locationsReady = false;
 let lbSort = 'avgRound';
 
@@ -42,6 +43,7 @@ async function boot() {
     if (!readHash() || gameActive() || compActive()) return;
     if (keyFromLink) { await store.refresh(); await checkKeyFromLink(); }
     if (pendingMatch) { const code = pendingMatch; pendingMatch = null; openMatch(code); }
+    else if (pendingRoom) { pendingRoom = false; waitForLobby(); }
     else navigate('home');
   });
 
@@ -55,6 +57,7 @@ async function boot() {
   await store.refresh();
   if (keyFromLink) await checkKeyFromLink();
   if (pendingMatch) { const code = pendingMatch; pendingMatch = null; openMatch(code); }
+  else if (pendingRoom) { pendingRoom = false; waitForLobby(); }
   setInterval(() => { if (store.status().pending && store.status().hasKey) store.flush(); }, 60000);
   window.addEventListener('online', () => store.flush());
   window.addEventListener('beforeunload', e => { if (gameActive() || compActive()) { e.preventDefault(); e.returnValue = ''; } });
@@ -78,6 +81,7 @@ function readHash() {
     if (k !== store.getKey()) { store.setKey(k); keyFromLink = true; }
     handled = true;
   }
+  if (h.has('raum')) { pendingRoom = true; handled = true; }
   if (h.get('m')) {
     const code = h.get('m').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length === 4) pendingMatch = code;
@@ -592,6 +596,7 @@ function bindSettings() {
     else openModal(`<p class="modal-text">Einladungslink:</p><input class="copy-field" readonly value="${esc(url)}"><div class="modal-actions"><button class="btn btn-primary" data-x>OK</button></div>`,
       (root, close) => { $('[data-x]', root).onclick = close; $('input', root).select(); });
   };
+  $('#btn-room-link').onclick = () => copyRoomLink();
   $('#btn-key-test').onclick = async () => {
     const r = await store.testKey(store.getKey());
     toast(r.ok ? '✅ Verbindung klappt – Schreibrecht vorhanden.' : esc(r.reason), r.ok ? 'ok' : 'error', 6000);

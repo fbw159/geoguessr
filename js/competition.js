@@ -16,13 +16,15 @@ import { COMP_TIME_FACTOR_MIN as TIME_FACTOR_MIN, MAPS, SITE_URL } from './confi
 import { $, $$, copyText, countryName, esc, flagImg, fmtDate, fmtDist, fmtNum, fmtTime, haversine, lsGet, lsSet, uid } from './util.js';
 import { countryList, getMap, loadLocations, makePicker, maxDist, scoreFor } from './locations.js';
 import * as store from './storage.js';
-import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './ui.js';
+import { avatar, confirmDialog, currentScreen, onLeave, openModal, show, toast } from './ui.js';
 import { Overlay, actualMarkerEl, createMap, fitPoints, guessMarkerEl, nearCopy } from './maps.js';
 import * as play from './playview.js';
 import { showPointsInfo } from './info.js';
 
 const MATCH_DIR = 'data/matches';
 const COMP_FILE = 'data/competitions.json';
+const ROOM_FILE = 'data/room.json';          // zeigt auf die zuletzt erstellte Lobby (für den festen Link)
+const ROOM_MAX_AGE = 6 * 3600 * 1000;         // ältere Lobbys gelten als verwaist
 const START_DELAY = 8000;      // Countdown vor Runde 1 (ms)
 const RESULT_PAUSE = 15000;    // Rundenergebnis bis zur nächsten Runde (ms)
 const GRACE = 4000;            // Puffer nach Zeitablauf für späte Tipps (ms)
@@ -37,6 +39,7 @@ const device = lsGet('gg.device', null) || (() => { const d = uid('d'); lsSet('g
 let C = null;          // laufender Wettkampf auf diesem Gerät
 let crMap = null, crOv = null, cfMap = null, cfOv = null;
 let hubData = null;    // competitions.json
+let W = null;          // Warten auf die nächste Lobby (fester Link)
 
 const r5 = x => Math.round(x * 1e5) / 1e5;
 const matchPath = code => `${MATCH_DIR}/${code}.json`;
@@ -45,6 +48,7 @@ const medal = r => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : `${r
 const fmtSec = t => t == null ? '–' : `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(t)} s`;
 
 export const compActive = () => !!C && C.m?.status === 'running' && !!C.me;
+export const roomUrl = () => `${SITE_URL}#raum${store.getKey() ? `&key=${encodeURIComponent(store.getKey())}` : ''}`;
 export const inviteUrl = code => `${SITE_URL}#m=${code}${store.getKey() ? `&key=${encodeURIComponent(store.getKey())}` : ''}`;
 
 export function initCompetition(opts) {
@@ -52,6 +56,7 @@ export function initCompetition(opts) {
   playerDialog = opts.playerDialog;
   bindHub();
   bindLobby();
+  onLeave('comp', stopWaiting);
   bindResult();
   store.onChange(() => {
     if (currentScreen() === 'comp') renderHubPlayers();
@@ -166,6 +171,72 @@ function bindHub() {
   $('#cj-code').onkeydown = e => { if (e.key === 'Enter') join(); };
   $('#comp-refresh').onclick = loadHubData;
   $('#comp-info').onclick = () => showPointsInfo('comp');
+  $('#cj-wait').onclick = () => startWaiting();
+  $('#cj-roomlink').onclick = () => copyRoomLink();
+  $('#cw-stop').onclick = () => stopWaiting();
+}
+
+export async function copyRoomLink() {
+  const url = roomUrl();
+  if (await copyText(url)) toast('Fester Competition-Link kopiert – als Lesezeichen speichern oder an Freunde schicken.', 'ok', 5000);
+  else openModal(`<p class="modal-text">Fester Competition-Link:</p><input class="copy-field" readonly value="${esc(url)}"><div class="modal-actions"><button class="btn btn-primary" data-x>OK</button></div>`,
+    (root, close) => { root.querySelector('[data-x]').onclick = close; root.querySelector('input').select(); });
+}
+
+// ============================== Fester Link: auf die nächste Lobby warten ==============================
+export function waitForLobby() {
+  navigate('comp');
+  startWaiting();
+}
+
+function setWaitText(html) { $('#cw-text').innerHTML = html; }
+
+function startWaiting() {
+  stopWaiting();
+  if (!store.status().hasKey) toast('Dieser Browser hat noch keinen Schlüssel – öffne den festen Link mit Schlüssel.', 'error', 6000);
+  W = { etag: null, timer: null };
+  $('#comp-waiting').classList.remove('hidden');
+  setWaitText('Suche die aktuelle Lobby…');
+  window.scrollTo(0, 0);
+  pollRoom();
+}
+
+function stopWaiting() {
+  if (W) clearTimeout(W.timer);
+  W = null;
+  $('#comp-waiting').classList.add('hidden');
+}
+
+async function pollRoom() {
+  if (!W) return;
+  const w = W;
+  const idle = 'Gerade ist keine Lobby offen. Sobald jemand einen Wettkampf erstellt, bist du <b>automatisch dabei</b> – einfach diese Seite offen lassen.';
+  try {
+    const r = await store.readFile(ROOM_FILE, w.etag);
+    if (W !== w) return;
+    if (!r.notModified) {
+      w.etag = r.etag;
+      const code = r.data?.code;
+      const m = code ? (await store.readFile(matchPath(code))).data : null;
+      if (W !== w) return;
+      const fresh = m && Date.now() - Date.parse(m.created) < ROOM_MAX_AGE;
+      const mine = m && Object.values(m.players || {}).some(p => p.device === device);
+      if (fresh && m.status === 'lobby') { stopWaiting(); openMatch(m.code, m, { autoJoin: true, fromRoom: true }); return; }
+      if (fresh && m.status === 'running' && mine) { stopWaiting(); openMatch(m.code, m, { fromRoom: true }); return; }
+      if (fresh && m.status === 'running') setWaitText(`Gerade läuft ein Wettkampf ohne dich (Code <b>${esc(m.code)}</b>). Sobald die nächste Lobby aufgeht, bist du automatisch dabei.`);
+      else setWaitText(idle);
+    }
+  } catch {
+    setWaitText('Verbindung zu GitHub hakt – versuche es weiter…');
+  }
+  if (W === w) w.timer = setTimeout(pollRoom, 3000);
+}
+
+async function updateRoom(m) {
+  try {
+    await store.mutateFile(ROOM_FILE, () => ({ code: m.code, created: m.created, host: m.host, hostName: m.players[m.host]?.name || '' }),
+      `Feste Lobby → ${m.code}`, { create: true });
+  } catch (e) { console.warn('Lobby-Zeiger konnte nicht gesetzt werden', e); }
 }
 
 // ============================== Erstellen & Öffnen ==============================
@@ -206,6 +277,7 @@ async function newMatch({ host, map, rounds, time, mode, players, order }) {
     };
     try {
       await store.writeFile(matchPath(code), data, null, `Wettkampf ${code}: erstellt von ${players[host]?.name || '?'}`);
+      updateRoom(data);
       return data;
     } catch (e) {
       if (!e.conflict) throw e; // Code existiert schon → neuen würfeln
@@ -214,10 +286,11 @@ async function newMatch({ host, map, rounds, time, mode, players, order }) {
   throw new Error('Kein freier Code gefunden');
 }
 
-export async function openMatch(code, data = null) {
+export async function openMatch(code, data = null, { autoJoin = false, fromRoom = false } = {}) {
   stopComp();
+  stopWaiting();
   C = {
-    code, m: data, etag: null, me: null, phase: null, round: null,
+    code, m: data, etag: null, me: null, phase: null, round: null, fromRoom,
     pending: {}, sending: {}, lastSend: {}, scheduling: {}, completeAt: {}, finalAt: null,
     pollTimer: null, tick: null, pollErr: 0, resultCount: -1, finishing: false, saving: false,
   };
@@ -233,6 +306,14 @@ export async function openMatch(code, data = null) {
   if (!C) return;
   C.pollTimer = setTimeout(() => poll(), 1500);
   C.tick = setInterval(update, 250);
+  // Fester Link: automatisch mit dem zuletzt genutzten Spieler beitreten (falls frei)
+  if (autoJoin && !C.me && C.m?.status === 'lobby') {
+    const pid = lsGet('gg.player', null);
+    if (pid && store.view().players.some(p => p.id === pid) && !C.m.players[pid]) {
+      await joinMatch(pid);
+      if (C?.me) toast(`Du bist als <b>${esc(C.m.players[C.me].name)}</b> dabei. Anderer Spieler? Einfach „Verlassen“ und neu wählen.`, 'ok', 6000);
+    }
+  }
 }
 
 function stopComp() {
@@ -354,10 +435,13 @@ function update() {
   } else cd.classList.add('hidden');
 
   switch (st.phase) {
-    case 'cancelled':
+    case 'cancelled': {
+      const again = C.fromRoom && C.me !== C.m.host;
       toast('Der Wettkampf wurde abgebrochen.', 'info', 5000);
       leaveTo('comp');
+      if (again) startWaiting();
       return;
+    }
     case 'lobby':
     case 'countdown':
       if (changed) { show('comp-lobby'); renderLobby(); }

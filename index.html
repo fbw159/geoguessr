@@ -238,10 +238,11 @@
         <div id="key-actions" class="hidden">
           <div class="row">
             <button id="btn-invite" class="btn btn-primary">🔗 Einladungslink kopieren</button>
+            <button id="btn-room-link" class="btn btn-ghost">📌 Festen Competition-Link kopieren</button>
             <button id="btn-key-test" class="btn btn-ghost">Verbindung testen</button>
             <button id="btn-key-remove" class="btn btn-ghost btn-danger-text">Schlüssel von diesem Gerät entfernen</button>
           </div>
-          <p class="muted small">Der Einladungslink enthält den Schlüssel. Wer ihn öffnet, kann Punkte speichern – schick ihn also nur an Freunde.</p>
+          <p class="muted small">Beide Links enthalten den Schlüssel. Wer sie öffnet, kann Punkte speichern – schick sie also nur an Freunde. Der feste Competition-Link führt immer in die gerade offene Wettkampf-Lobby.</p>
         </div>
       </div>
 
@@ -276,6 +277,11 @@
     <main class="comp-main">
       <h1 class="headline">⚔️ Competition Mode</h1>
       <p class="subline">Alle spielen gleichzeitig dieselben Orte – Genauigkeit zählt, Tempo auch.</p>
+      <div id="comp-waiting" class="comp-waiting card hidden">
+        <div class="spinner"></div>
+        <div class="cw-body"><div class="cw-title">⏳ Warte auf die nächste Lobby</div><div id="cw-text" class="muted"></div></div>
+        <button id="cw-stop" class="btn btn-ghost">Nicht mehr warten</button>
+      </div>
       <div id="comp-nokey" class="ks ks-warn hidden">Für den Competition Mode braucht dieser Browser den Schlüssel. Öffne einmal den Einladungslink (oder trage ihn in den Einstellungen ein).</div>
       <div class="comp-grid">
         <div class="card comp-card">
@@ -304,6 +310,8 @@
           <h2 class="h2">Beitreten</h2>
           <p class="muted">Code vom Host eingeben – oder einfach den Einladungslink öffnen.</p>
           <div class="row"><input id="cj-code" class="code-input" maxlength="4" placeholder="KX4P" autocomplete="off" spellcheck="false"><button id="cj-join" class="btn btn-primary">Beitreten</button></div>
+          <div class="row"><button id="cj-wait" class="btn btn-ghost">⏳ Auf nächste Lobby warten</button><button id="cj-roomlink" class="btn btn-ghost">📌 Festen Link kopieren</button></div>
+          <p class="muted small">Mit dem <b>festen Link</b> landet man immer automatisch in der gerade offenen Lobby – ideal als Lesezeichen. Ist keine offen, wartet die Seite, bis jemand eine erstellt.</p>
           <div class="comp-rules">
             <h3 class="h3">So wird gewertet</h3>
             <div class="info-formula small-formula">Punkte = Genauigkeit × Tempo-Faktor</div>

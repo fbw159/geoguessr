@@ -539,3 +539,8 @@ select.sel { border-color: var(--accent); background: rgba(254, 205, 25, 0.12); 
 .info-list li { margin-bottom: 6px; }
 .comp-rules { margin-top: 6px; }
 @media (max-width: 760px) { .info-box-grid { grid-template-columns: 1fr; } }
+
+.comp-waiting { display: flex; align-items: center; gap: 18px; padding: 16px 22px; margin: 10px 0 18px; border-color: rgba(254, 205, 25, 0.5); background: linear-gradient(90deg, rgba(254, 205, 25, 0.16), rgba(254, 205, 25, 0.04)); }
+.comp-waiting .spinner { flex: none; }
+.cw-body { flex: 1; line-height: 1.5; }
+.cw-title { font-weight: 900; font-size: 1.15rem; }

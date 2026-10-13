@@ -12,6 +12,7 @@ import { compActive, copyRoomLink, initCompetition, openMatch, renderHub, waitFo
 import { renderInfoBox } from './info.js';
 
 const prefs = { ...DEFAULT_PREFS, ...lsGet('gg.prefs', {}) };
+delete prefs.undefined; // Altlast: Klicks im Competition-Menü landeten früher hier
 let currentPlayerId = lsGet('gg.player', null);
 let challenge = null;
 let keyFromLink = false;
@@ -342,7 +343,7 @@ function renderSetup() {
       `<option value="c-${c.cc}"${prefs.map === `c-${c.cc}` ? ' selected' : ''}>${esc(c.name)} (${fmtNum(c.n)} Orte)</option>`).join('');
   } else sel.innerHTML = '<option>Lade Länder…</option>';
   sel.classList.toggle('sel', prefs.map.startsWith('c-'));
-  $$('.seg').forEach(seg => {
+  $$('.seg[data-opt]').forEach(seg => { // nur das Spiel-Setup – die Wettkampf-Optionen (data-copt) verwaltet competition.js
     const k = seg.dataset.opt;
     $$('button', seg).forEach(b => b.classList.toggle('sel', String(prefs[k]) === b.dataset.v));
   });
@@ -364,7 +365,7 @@ function bindSetup() {
     prefs.map = e.target.value || 'world';
     savePrefs();
   });
-  $$('.seg').forEach(seg => seg.addEventListener('click', e => {
+  $$('.seg[data-opt]').forEach(seg => seg.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
     const k = seg.dataset.opt;

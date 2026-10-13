@@ -38,7 +38,7 @@ Ohne Schlüssel wird ein Spiel lokal im Browser gesichert und automatisch hochge
 
 - Reines HTML/CSS/JavaScript, gehostet über GitHub Pages – kein Server, kein Build.
 - Street View über den Google-Maps-Embed (ohne API-Key) mit festen Panorama-IDs.
-- Karten: [MapLibre GL](https://maplibre.org/) mit dem Stil „Natur“ von [VersaTiles](https://versatiles.org/) (Vektorkarte, deutsche Namen, © OpenStreetMap-Mitwirkende).
+- Karten: [MapLibre GL](https://maplibre.org/) mit dem Stil „Natur“ von [VersaTiles](https://versatiles.org/) (Vektorkarte, deutsche Namen, © OpenStreetMap-Mitwirkende). Natur (Wald, Wiesen, Felder) wird eine Zoomstufe früher eingeblendet als im Original, Städtenamen eine Stufe früher über `karten/orte.json` (Orte aus [Natural Earth](https://www.naturalearthdata.com/), gemeinfrei).
 - Competition Mode: je Wettkampf eine JSON-Datei unter `data/matches/` auf dem Branch `data`; die Browser fragen sie alle ~2 s ab (mit ETag).
 - Orte: ~26.000 Panoramen aus dem Datensatz von [WorldGuessr](https://github.com/codergautam/worldguessr)
   (PolyForm Noncommercial – hier rein privat genutzt). Deutschland, Österreich und Schweiz komplett, der Rest als Stichprobe.

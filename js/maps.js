@@ -29,8 +29,50 @@ export function createMap(container, opts = {}) {
   map.scrollZoom.setWheelZoomRate(1 / 200);
   map.scrollZoom.setZoomRate(1 / 40);
   map._ready = new Promise(res => (map.loaded() ? res() : map.once('load', res)));
+  map._ready.then(() => addOrte(map));
   new ResizeObserver(() => map.resize()).observe(map.getContainer());
   return map;
+}
+
+// ---------------------------------------------------------------------------
+// Städtenamen etwas früher zeigen: Die Vektorkacheln enthalten Städte erst ab
+// Zoom 6 und Kleinstädte ab Zoom 7. Für die Stufe davor blenden wir Orte aus
+// Natural Earth (gemeinfrei, karten/orte.json) ein – unterhalb der normalen
+// Ortsnamen, sodass doppelte Namen automatisch ausgeblendet werden.
+// ---------------------------------------------------------------------------
+const ORTE_URL = 'karten/orte.json';
+let orteData = null;
+function loadOrte() {
+  return (orteData ||= fetch(ORTE_URL)
+    .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+    .then(rows => ({
+      type: 'FeatureCollection',
+      features: rows.map(([lng, lat, n, p]) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { n, p } })),
+    }))
+    .catch(() => (orteData = null)));
+}
+
+const orteLayer = (id, minzoom, maxzoom, filter) => ({
+  id, type: 'symbol', source: 'orte', minzoom, maxzoom, filter,
+  layout: {
+    'text-field': ['get', 'n'],
+    'text-font': ['noto_sans_regular'],
+    'text-size': ['interpolate', ['linear'], ['zoom'], 5, 11, 7, 12],
+    'symbol-sort-key': ['-', ['get', 'p']],
+  },
+  paint: { 'text-color': 'rgb(46,46,63)', 'text-halo-color': 'rgba(255,255,255,0.8)', 'text-halo-width': 2, 'text-halo-blur': 1 },
+});
+
+async function addOrte(map) {
+  const data = await loadOrte();
+  if (!data) return;
+  try {
+    if (map.getSource('orte')) return;
+    map.addSource('orte', { type: 'geojson', data });
+    const before = map.getLayer('label-place-neighbourhood') ? 'label-place-neighbourhood' : undefined;
+    map.addLayer(orteLayer('label-orte-gross', 5, 6, ['>=', ['get', 'p'], 100000]), before); // große Städte eine Stufe früher
+    map.addLayer(orteLayer('label-orte', 6, 7, ['>=', ['get', 'p'], 0]), before);            // kleinere Städte eine Stufe früher
+  } catch { /* Karte wurde inzwischen entfernt */ }
 }
 
 export function guessMarkerEl(p) {

@@ -220,10 +220,11 @@ select.sel { border-color: var(--accent); background: rgba(254, 205, 25, 0.12); 
 .timer.urgent { background: var(--red); animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { transform: translateX(-50%) scale(1.07); } }
 
+/* Rechts 68px Abstand: Googles Bedienelemente rechts unten im Street View (Kompass, Zoom) bleiben frei */
 .guess-panel {
   --w: 330px; --h: 220px;
-  position: absolute; right: 18px; bottom: 22px; z-index: 10; width: var(--w);
-  max-width: calc(100vw - 36px); opacity: .8; transition: width .18s ease, opacity .18s ease;
+  position: absolute; right: 68px; bottom: 22px; z-index: 10; width: var(--w);
+  max-width: calc(100vw - 86px); opacity: .8; transition: width .18s ease, opacity .18s ease;
 }
 .guess-panel.expanded { opacity: 1; }
 .guess-panel.expanded[data-level="0"] { --w: 440px; --h: 310px; }

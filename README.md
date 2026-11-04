@@ -9,7 +9,7 @@ Ein kleines, privates GeoGuessr für mich und meine Freunde – im Browser, ohne
 1. Seite öffnen und den eigenen Spieler auswählen (oder mit „Neuer Spieler“ anlegen – nur ein Name, kein Passwort).
 2. Karte wählen (Welt, Europa, Deutschland, DACH, Kontinente oder ein einzelnes Land), Runden, Zeitlimit und Modus einstellen.
 3. Street View anschauen, Pin auf die Karte setzen, „Raten“. Bis zu 100 Punkte pro Runde.
-4. Nach dem Spiel landen die Punkte automatisch auf dem Konto des Spielers. Die **Bestenliste** vergleicht alle Spieler nach **Ø Punkten pro Guess** (Platz ab 10 Guesses).
+4. Nach dem Spiel landen die Punkte automatisch auf dem Konto des Spielers. Die **Bestenliste** vergleicht alle Spieler nach **Ø Punkten pro Guess** (Platz ab 10 Guesses); darunter stehen die Wettkampf-Tabelle und eine Übersicht, wer wie viele Spiele gespielt hat.
 
 ## ⚔️ Competition Mode
 
@@ -21,7 +21,7 @@ Mehrere Spieler an eigenen Rechnern spielen **gleichzeitig dieselben Orte**:
 4. Punkte pro Runde = Genauigkeit (0–100) × Tempo-Faktor (sofort 100 %, am Zeitlimit 70 %).
 5. Nach jeder Runde sieht man alle Pins, am Ende gibt es eine Siegerehrung und auf Wunsch eine Revanche.
 
-Wettkämpfe werden getrennt gespeichert (`data/competitions.json`) und erscheinen nur in der Wettkampf-Bestenliste.
+Wettkämpfe werden getrennt gespeichert (`data/competitions.json`) und haben auf der Bestenliste eine eigene Tabelle.
 
 Extras: Endlos-Modus (spielen, bis man auf „Beenden“ drückt), Zeitlimit, Standbild-Modus (NMPZ), Challenge-Links („Gleiche Orte als Challenge teilen“), Spielerprofile mit Statistik.
 

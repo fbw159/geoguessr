@@ -170,16 +170,19 @@
     <header class="topbar">
       <a class="brand" href="#" data-nav="home"><span class="brand-globe">🌍</span><span class="brand-text">GEO<b>GUESSR</b></span></a>
       <nav class="topnav">
-        <button class="navbtn" data-nav="home">← Zurück</button>
+        <button class="navbtn" id="lb-back" data-nav="home">← Zurück</button>
         <button class="navbtn" id="btn-refresh" title="Neu laden">⟳ Aktualisieren</button>
         <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
       </nav>
     </header>
     <main class="lb-main">
       <h1 class="headline">Bestenliste</h1>
-      <div class="lb-filter">
-        <label for="lb-map">Karte:</label>
-        <select id="lb-map"></select>
+      <div class="lb-head">
+        <h2 class="h2">🌍 Normales Spiel</h2>
+        <div class="lb-filter">
+          <label for="lb-map">Karte:</label>
+          <select id="lb-map"></select>
+        </div>
       </div>
       <div class="table-wrap">
         <table class="lb-table">
@@ -199,8 +202,20 @@
           <tbody id="lb-body"></tbody>
         </table>
       </div>
-      <h2 class="h2">Letzte Spiele</h2>
-      <div id="recent-games" class="recent-games"></div>
+      <h2 class="h2">⚔️ Competition Mode</h2>
+      <div class="table-wrap">
+        <table class="lb-table comp-lb">
+          <thead><tr><th>#</th><th>Spieler</th><th class="key-col">Siege</th><th>Podest</th><th>Wettkämpfe</th><th title="Durchschnittliche Wettkampf-Punkte pro Runde (inkl. Tempo)">Ø Punkte / Runde</th><th title="Durchschnittliche Genauigkeit pro Runde (0–100)">Ø Genauigkeit</th><th title="Durchschnittliche Zeit bis zum Tipp">Ø Zeit</th></tr></thead>
+          <tbody id="comp-lb-body"></tbody>
+        </table>
+      </div>
+      <h2 class="h2">🎮 Gespielte Spiele</h2>
+      <div class="table-wrap table-narrow">
+        <table class="lb-table count-table">
+          <thead><tr><th>#</th><th>Spieler</th><th>Normale Spiele</th><th>Wettkämpfe</th><th class="key-col">Gesamt</th></tr></thead>
+          <tbody id="count-body"></tbody>
+        </table>
+      </div>
     </main>
   </section>
 
@@ -269,6 +284,7 @@
       <a class="brand" href="#" data-nav="home"><span class="brand-globe">🌍</span><span class="brand-text">GEO<b>GUESSR</b></span></a>
       <nav class="topnav">
         <button class="navbtn" data-nav="home">← Zurück</button>
+        <button class="navbtn" data-nav="leaderboard">🏆 Bestenliste</button>
         <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
       </nav>
     </header>
@@ -312,15 +328,6 @@
           <p class="muted small">Mit dem <b>festen Link</b> landet man immer automatisch in der gerade offenen Lobby – ideal als Lesezeichen. Ist keine offen, wartet die Seite, bis jemand eine erstellt.</p>
         </div>
       </div>
-      <h2 class="h2">Wettkampf-Bestenliste <button class="chip" id="comp-refresh" title="Neu laden">⟳</button></h2>
-      <div class="table-wrap">
-        <table class="lb-table comp-lb">
-          <thead><tr><th>#</th><th>Spieler</th><th class="key-col">Siege</th><th>Podest</th><th>Wettkämpfe</th><th title="Durchschnittliche Wettkampf-Punkte pro Runde (inkl. Tempo)">Ø Punkte / Runde</th><th title="Durchschnittliche Genauigkeit pro Runde (0–100)">Ø Genauigkeit</th><th title="Durchschnittliche Zeit bis zum Tipp">Ø Zeit</th></tr></thead>
-          <tbody id="comp-lb-body"></tbody>
-        </table>
-      </div>
-      <h2 class="h2">Letzte Wettkämpfe</h2>
-      <div id="comp-recent" class="comp-recent"></div>
     </main>
   </section>
 
@@ -392,6 +399,7 @@
       <div class="final-actions">
         <button id="cf-rematch" class="btn btn-primary hidden">🔁 Revanche (gleiche Einstellungen)</button>
         <button id="cf-hub" class="btn btn-ghost">⚔️ Competition-Menü</button>
+        <button class="btn btn-ghost" data-nav="leaderboard">🏆 Bestenliste</button>
         <button class="btn btn-ghost" data-nav="home">Hauptmenü</button>
       </div>
     </div>

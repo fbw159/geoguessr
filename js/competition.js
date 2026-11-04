@@ -7,13 +7,13 @@
 // Technik: Jeder Wettkampf ist eine JSON-Datei auf dem Branch "data"
 // (data/matches/<CODE>.json). Alle Browser fragen sie alle ~2 s ab (mit ETag, also sparsam).
 // Rundenstarts sind feste Zeitpunkte; die Zeit bis zum Tipp misst jeder Browser selbst.
-// Ergebnisse landen getrennt von der normalen Bestenliste in data/competitions.json.
+// Ergebnisse landen in data/competitions.json (eigene Tabelle auf der Bestenliste).
 //
 // Wertung (Variante A): Punkte = Genauigkeit (0–100) × Tempo-Faktor,
 // Tempo-Faktor fällt linear von 100 % (sofort) auf 70 % (Zeitlimit).
 // ---------------------------------------------------------------------------
 import { COMP_TIME_FACTOR_MIN as TIME_FACTOR_MIN, MAPS, SITE_URL } from './config.js';
-import { $, $$, copyText, countryName, esc, flagImg, fmtDate, fmtDist, fmtNum, fmtTime, haversine, lsGet, lsSet, uid } from './util.js';
+import { $, $$, copyText, countryName, esc, flagImg, fmtDist, fmtNum, fmtTime, haversine, lsGet, lsSet, uid } from './util.js';
 import { countryList, getMap, loadLocations, makePicker, maxDist, scoreFor } from './locations.js';
 import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, onLeave, openModal, show, toast } from './ui.js';
@@ -37,7 +37,8 @@ const device = lsGet('gg.device', null) || (() => { const d = uid('d'); lsSet('g
 
 let C = null;          // laufender Wettkampf auf diesem Gerät
 let crMap = null, crOv = null, cfMap = null, cfOv = null;
-let hubData = null;    // competitions.json
+let hubData = null;    // competitions.json (für die Bestenliste)
+let hubError = false;
 let W = null;          // Warten auf die nächste Lobby (fester Link)
 
 const r5 = x => Math.round(x * 1e5) / 1e5;
@@ -77,7 +78,6 @@ export async function renderHub() {
   sel.value = prefs.map;
   if (!sel.value) { prefs.map = 'world'; sel.value = 'world'; }
   renderSegs();
-  loadHubData();
 }
 
 function renderHubPlayers() {
@@ -95,18 +95,25 @@ function renderSegs() {
   });
 }
 
-async function loadHubData() {
+// ============================== Wettkampf-Bestenliste (auf der gemeinsamen Bestenliste) ==============================
+export async function loadCompResults() {
   try {
     const r = await store.readFile(COMP_FILE);
     hubData = r.data || { v: 1, matches: [] };
+    hubError = false;
   } catch {
-    hubData = hubData || { v: 1, matches: [] };
+    hubError = !hubData;
   }
-  renderHubBoard();
 }
+export const compReady = () => !!hubData;
+export const compMatches = () => hubData?.matches || [];
 
-function renderHubBoard() {
-  const matches = hubData?.matches || [];
+export function renderCompBoard() {
+  if (!hubData) {
+    $('#comp-lb-body').innerHTML = `<tr><td colspan="8" class="muted center">${hubError ? 'Wettkämpfe konnten nicht geladen werden.' : 'Lade Wettkämpfe…'}</td></tr>`;
+    return;
+  }
+  const matches = hubData.matches || [];
   const names = Object.fromEntries(store.view().players.map(p => [p.id, p]));
   const agg = {};
   for (const m of matches) {
@@ -137,16 +144,6 @@ function renderHubBoard() {
         <td class="num">${a.tn ? fmtSec(a.t / a.tn) : '–'}</td>
       </tr>`;
   }).join('') || '<tr><td colspan="8" class="muted center">Noch keine Wettkämpfe – leg los!</td></tr>';
-
-  $('#comp-recent').innerHTML = [...matches].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 12).map(m => {
-    const res = [...(m.results || [])].sort((a, b) => a.place - b.place);
-    return `
-      <div class="comp-row">
-        <span class="cr-date muted">${fmtDate(m.date)}</span>
-        <span class="cr-map">${esc(m.mapName || getMap(m.map).name)} · ${m.rounds} R. · ${m.time} s${m.mode === 'nmpz' ? ' · NMPZ' : ''}</span>
-        <span class="cr-res">${res.map(r => `<span class="cr-p">${r.place <= 3 ? medal(r.place) : `${r.place}.`} ${esc(names[r.pid]?.name || r.name)} <b>${fmtNum(r.total)}</b></span>`).join('')}</span>
-      </div>`;
-  }).join('') || '<p class="muted">Noch keine Wettkämpfe.</p>';
 }
 
 function bindHub() {
@@ -168,7 +165,6 @@ function bindHub() {
   };
   $('#cj-join').onclick = join;
   $('#cj-code').onkeydown = e => { if (e.key === 'Enter') join(); };
-  $('#comp-refresh').onclick = loadHubData;
   $('#cj-wait').onclick = () => startWaiting();
   $('#cj-roomlink').onclick = () => copyRoomLink();
   $('#cw-stop').onclick = () => stopWaiting();

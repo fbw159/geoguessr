@@ -8,7 +8,7 @@ import * as store from './storage.js';
 import { avatar, confirmDialog, currentScreen, openModal, show, toast } from './ui.js';
 import { gameActive, initGame, startGame } from './game.js';
 import { initPlayView } from './playview.js';
-import { compActive, copyRoomLink, initCompetition, openMatch, renderHub, waitForLobby } from './competition.js';
+import { compActive, compMatches, compReady, copyRoomLink, initCompetition, loadCompResults, openMatch, renderCompBoard, renderHub, waitForLobby } from './competition.js';
 import { renderInfoBox } from './info.js';
 
 const prefs = { ...DEFAULT_PREFS, ...lsGet('gg.prefs', {}) };
@@ -103,7 +103,13 @@ function navigate(screen) {
   if (screen === 'setup' && !currentPlayer()) screen = 'home';
   if (screen === 'home') renderHome();
   if (screen === 'setup') renderSetup();
-  if (screen === 'leaderboard') renderLeaderboard();
+  if (screen === 'leaderboard') {
+    // Zurück führt dorthin, woher man kam (Competition-Menü oder Hauptmenü)
+    const from = currentScreen();
+    if (from !== 'leaderboard') $('#lb-back').dataset.nav = from === 'comp' || from === 'comp-final' ? 'comp' : 'home';
+    renderLeaderboard();
+    refreshCompResults();
+  }
   if (screen === 'settings') renderSettings();
   if (screen === 'comp') renderHub();
   show(screen);
@@ -427,21 +433,42 @@ function renderLeaderboard() {
       <td class="num muted" colspan="7">noch keine Spiele</td>
     </tr>`).join('') || '<tr><td colspan="9" class="muted center">Noch keine Spiele – los geht’s!</td></tr>';
 
-  const games = db.games.filter(g => !filter || g.map === filter).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 25);
-  const pl = id => db.players.find(p => p.id === id);
-  $('#recent-games').innerHTML = games.map(g => {
-    const p = pl(g.player);
-    const pct = g.max ? g.score / g.max : 0;
+  renderCompBoard();
+  renderGameCounts();
+}
+
+// Wettkampf-Ergebnisse (competitions.json) laden und die beiden unteren Tabellen neu zeichnen
+async function refreshCompResults() {
+  await loadCompResults();
+  if (currentScreen() === 'leaderboard') { renderCompBoard(); renderGameCounts(); }
+}
+
+// Einfache Übersicht: wer hat wie viele Spiele gespielt – normale Spiele + Wettkämpfe
+function renderGameCounts() {
+  const db = store.view();
+  const ready = compReady();
+  const by = new Map(db.players.map(p => [p.id, { p, normal: 0, comp: 0 }]));
+  for (const g of db.games) { const c = by.get(g.player); if (c) c.normal++; }
+  for (const m of ready ? compMatches() : []) {
+    for (const r of m.results || []) {
+      let c = by.get(r.pid);
+      if (!c) by.set(r.pid, c = { p: { id: r.pid, name: r.name || '?', color: '#8d99ae', emoji: '?' }, normal: 0, comp: 0 });
+      c.comp++;
+    }
+  }
+  const rows = [...by.values()].map(c => ({ ...c, total: c.normal + c.comp }))
+    .sort((a, b) => (b.total - a.total) || a.p.name.localeCompare(b.p.name, 'de'));
+  $('#count-body').innerHTML = rows.map(c => {
+    const rank = 1 + rows.filter(x => x.total > c.total).length;
     return `
-      <button class="game-row" data-game="${esc(g.id)}">
-        ${avatar(p, 'sm')}
-        <span class="gr-name">${esc(p?.name || '?')}</span>
-        <span class="gr-map">${esc(g.mapName || getMap(g.map).name)} · ${g.rounds.length}${g.endless ? ' (∞)' : ''} R.${g.mode === 'nmpz' ? ' · NMPZ' : ''}${g.challenge ? ' · 🎯' : ''}</span>
-        <span class="gr-bar"><span style="width:${Math.round(pct * 100)}%"></span></span>
-        <span class="gr-score">${fmtNum(g.score)} <small class="muted">Ø ${fmtNum(g.score / Math.max(1, g.rounds.length))}</small></span>
-        <span class="gr-date muted">${fmtDate(g.date)}</span>
-      </button>`;
-  }).join('') || '<p class="muted">Noch keine Spiele.</p>';
+    <tr${c.total ? '' : ' class="idle"'}>
+      <td class="td-rank">${c.total ? `${rank}.` : '–'}</td>
+      <td><span class="cell-player">${avatar(c.p, 'sm')}<span>${esc(c.p.name)}</span></span></td>
+      <td class="num">${c.normal}</td>
+      <td class="num">${ready ? c.comp : '…'}</td>
+      <td class="num key-val">${c.total}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" class="muted center">Noch keine Spieler.</td></tr>';
 }
 
 function bindLeaderboard() {
@@ -451,12 +478,8 @@ function bindLeaderboard() {
     const tr = e.target.closest('[data-profile]');
     if (tr) profileDialog(tr.dataset.profile);
   });
-  $('#recent-games').addEventListener('click', e => {
-    const b = e.target.closest('[data-game]');
-    if (b) gameDialog(b.dataset.game);
-  });
   $('#btn-refresh').onclick = async () => {
-    const ok = await store.refresh();
+    const [ok] = await Promise.all([store.refresh(), refreshCompResults()]);
     toast(ok ? 'Aktualisiert' : 'GitHub gerade nicht erreichbar', ok ? 'ok' : 'error', 1800);
   };
 }

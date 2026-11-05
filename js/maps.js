@@ -23,6 +23,7 @@ export function createMap(container, opts = {}) {
     fadeDuration: 0,
     ...opts,
   });
+  map.on('styleimagemissing', e => addShield(map, e.id));
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
   // Schneller zoomen als der Standard (Mausrad 1/450, Trackpad 1/100)
@@ -32,6 +33,36 @@ export function createMap(container, opts = {}) {
   map._ready.then(() => addOrte(map));
   new ResizeObserver(() => map.resize()).observe(map.getContainer());
   return map;
+}
+
+// ---------------------------------------------------------------------------
+// Schilder für Straßennummern (Layer label-motorway-shield, label-shield-primary,
+// label-shield-secondary in karten/natural.json): Autobahn blau, Bundes-/Fernstraße
+// gelb, sonstige weiß. Gezeichnet, sobald die Karte sie zum ersten Mal braucht;
+// die Mitte ist dehnbar, damit „A 7“ und „B 4 / B 75“ gleich gut passen.
+// ---------------------------------------------------------------------------
+const SHIELDS = {
+  'gg-shield-motorway': { fill: '#2c5fc4', stroke: '#ffffff' },
+  'gg-shield-primary': { fill: '#f7d23e', stroke: '#2b2b2b' },
+  'gg-shield-secondary': { fill: '#ffffff', stroke: '#6f6f6f' },
+};
+function addShield(map, id) {
+  const s = SHIELDS[id];
+  if (!s || map.hasImage(id)) return;
+  const r = 2, w = 24 * r, h = 20 * r, rad = 4 * r, lw = 1.5 * r;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.beginPath();
+  g.roundRect(lw / 2, lw / 2, w - lw, h - lw, rad);
+  g.fillStyle = s.fill; g.fill();
+  g.lineWidth = lw; g.strokeStyle = s.stroke; g.stroke();
+  map.addImage(id, g.getImageData(0, 0, w, h), {
+    pixelRatio: r,
+    stretchX: [[rad + lw, w - rad - lw]],
+    stretchY: [[rad + lw, h - rad - lw]],
+    content: [rad, lw * 2, w - rad, h - lw * 2],
+  });
 }
 
 // ---------------------------------------------------------------------------

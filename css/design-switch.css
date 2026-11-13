@@ -1,0 +1,149 @@
+/* ===========================================================================
+   Design-Umschalter (Fenster, Fehlermeldungen, Ladebalken, Bluescreen).
+   Immer geladen – sieht in beiden Designs wie Windows 95 aus.
+   Alle Klassen beginnen mit "dz-", damit nichts mit der App kollidiert.
+   =========================================================================== */
+.dz-layer {
+  --dz-raised: inset -1px -1px #0a0a0a, inset 1px 1px #ffffff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  --dz-window: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf, inset -2px -2px #808080, inset 2px 2px #ffffff;
+  --dz-pressed: inset -1px -1px #ffffff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+  --dz-sunken: inset -1px -1px #ffffff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+  position: fixed; inset: 0; z-index: 5000; pointer-events: none;
+  font: 13px/1.35 "Microsoft Sans Serif", "MS Sans Serif", Tahoma, Geneva, "Segoe UI", sans-serif;
+  color: #000; text-align: left;
+}
+.dz-layer.active { pointer-events: auto; }
+.dz-layer *, .dz-layer *::before, .dz-layer *::after { box-sizing: border-box; }
+
+/* ---------- Fenster ---------- */
+.dz-win {
+  position: absolute; width: 400px; max-width: calc(100vw - 12px); padding: 3px;
+  background: #c0c0c0; box-shadow: var(--dz-window), 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+.dz-win.dz-w-sm { width: 340px; }
+.dz-win.dz-w-lg { width: 470px; }
+.dz-title {
+  display: flex; align-items: center; gap: 4px; height: 20px; padding: 0 2px 0 4px;
+  background: linear-gradient(90deg, #000080, #1084d0); color: #fff; font-weight: bold;
+  cursor: move; user-select: none; touch-action: none;
+}
+.dz-win.dz-inactive .dz-title { background: linear-gradient(90deg, #808080, #b5b5b5); color: #d4d4d4; }
+.dz-title span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dz-x {
+  flex: none; width: 16px; height: 14px; padding: 0; border: 0; border-radius: 0; background: #c0c0c0; color: #000;
+  box-shadow: var(--dz-raised); font: bold 13px/1 Arial, sans-serif; cursor: pointer; display: grid; place-items: center;
+}
+.dz-x:active { box-shadow: var(--dz-pressed); }
+.dz-body { display: flex; gap: 14px; align-items: flex-start; padding: 14px 12px 8px; }
+.dz-msg { flex: 1; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
+.dz-msg ul { margin: 6px 0; padding-left: 20px; }
+.dz-msg small { color: #404040; }
+.dz-btns { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; padding: 6px 10px 8px; }
+.dz-btns.dz-right { justify-content: flex-end; }
+.dz-btn {
+  min-width: 75px; height: 23px; padding: 0 10px; border: 0; border-radius: 0; background: #c0c0c0; color: #000;
+  box-shadow: var(--dz-raised); font: inherit; cursor: pointer; white-space: nowrap;
+}
+.dz-btn.dz-default { box-shadow: var(--dz-raised), 0 0 0 1px #000; }
+.dz-btn:active:not(:disabled) { box-shadow: var(--dz-pressed); }
+.dz-btn:focus-visible { outline: 1px dotted #000; outline-offset: -5px; }
+.dz-btn:disabled { color: #808080; text-shadow: 1px 1px 0 #fff; cursor: default; }
+.dz-details {
+  margin: 10px 0 0; padding: 6px; max-height: 160px; overflow: auto; background: #fff; box-shadow: var(--dz-sunken);
+  font: 11px/1.35 "Courier New", monospace; white-space: pre;
+}
+
+/* ---------- Symbole ---------- */
+.dz-icon { position: relative; flex: none; width: 32px; height: 32px; }
+.dz-icon-error { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff7070, #d00000 65%, #900000); box-shadow: 1px 1px 0 #000; }
+.dz-icon-error::before, .dz-icon-error::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 4px; background: #fff;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.dz-icon-error::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.dz-icon-warn { background: #ffd800; clip-path: polygon(50% 2%, 100% 96%, 0 96%); }
+.dz-icon-warn::after { content: "!"; position: absolute; left: 0; right: 0; top: 9px; text-align: center; font: bold 20px/1 Arial, sans-serif; color: #000; }
+.dz-icon-info, .dz-icon-question { border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px #000080, 1px 1px 0 #000; }
+.dz-icon-info::after, .dz-icon-question::after {
+  position: absolute; inset: 0; display: grid; place-items: center; color: #000080; font: bold 21px/1 "Times New Roman", serif;
+}
+.dz-icon-info::after { content: "i"; }
+.dz-icon-question::after { content: "?"; font-family: Arial, sans-serif; }
+
+/* ---------- Eigenschaften von Anzeige ---------- */
+.dz-tabs { display: flex; padding: 8px 8px 0; }
+.dz-tab {
+  margin-top: 2px; padding: 3px 9px; border: 0; border-radius: 0; background: #c0c0c0; color: #000; font: inherit; cursor: pointer;
+  box-shadow: inset 1px 1px #fff, inset -1px 0 #000, inset -2px 0 #808080;
+}
+.dz-tab.dz-sel { position: relative; z-index: 1; margin-top: 0; padding-bottom: 5px; margin-bottom: -2px; background: #c0c0c0; }
+.dz-panel { margin: 0 8px; padding: 12px; box-shadow: inset 1px 1px #fff, inset -1px -1px #000, inset -2px -2px #808080; }
+.dz-monitor { width: 176px; margin: 0 auto 14px; }
+.dz-screen {
+  position: relative; height: 116px; border: 9px solid #c0c0c0; overflow: hidden;
+  box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #808080; background: #008080;
+}
+.dz-monitor::after { content: ""; display: block; width: 70px; height: 14px; margin: 0 auto; background: #c0c0c0; box-shadow: var(--dz-raised); }
+.dz-screen .dz-mini { position: absolute; left: 14px; top: 12px; right: 14px; bottom: 16px; }
+.dz-screen.dz-retro { background: #008080; }
+.dz-screen.dz-retro .dz-mini { background: #c0c0c0; box-shadow: var(--dz-window); padding: 2px; }
+.dz-screen.dz-retro .dz-mini::before { content: ""; display: block; height: 8px; background: linear-gradient(90deg, #000080, #1084d0); }
+.dz-screen.dz-retro .dz-mini::after { content: ""; display: block; height: calc(100% - 12px); margin-top: 2px; background: #fff; }
+.dz-screen.dz-retro::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 9px; background: #c0c0c0; box-shadow: inset 0 1px #fff; }
+.dz-screen.dz-original { background: linear-gradient(160deg, #2d2190, #120d36); }
+.dz-screen.dz-original .dz-mini { border-radius: 8px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.25); }
+.dz-screen.dz-original .dz-mini::before { content: ""; display: block; width: 46%; height: 9px; margin: 8px; border-radius: 99px; background: #fecd19; }
+.dz-screen.dz-original .dz-mini::after { content: ""; display: block; width: 38%; height: 11px; margin: 26px 8px 0 auto; border-radius: 99px; background: #6cb928; }
+.dz-field { display: flex; flex-direction: column; gap: 4px; }
+.dz-list { padding: 2px; background: #fff; box-shadow: var(--dz-sunken); }
+.dz-item { display: block; width: 100%; padding: 2px 5px; border: 0; background: none; color: #000; font: inherit; text-align: left; cursor: default; }
+.dz-item.dz-sel { background: #000080; color: #fff; }
+.dz-item:focus-visible { outline: 1px dotted #000; outline-offset: -1px; }
+
+/* ---------- Lizenzvertrag ---------- */
+.dz-eula {
+  height: 150px; margin: 8px 0; padding: 6px 8px; overflow: auto; background: #fff; box-shadow: var(--dz-sunken);
+  font: 12px/1.4 "Courier New", monospace; white-space: pre-wrap;
+}
+.dz-check { display: flex; align-items: center; gap: 6px; }
+.dz-check input { margin: 0; }
+.dz-check.dz-off { color: #808080; text-shadow: 1px 1px 0 #fff; }
+.dz-hint { color: #404040; font-size: 12px; margin-top: 4px; }
+
+/* ---------- Kopier-Fortschritt ---------- */
+.dz-anim { position: relative; height: 42px; margin-bottom: 6px; font-size: 26px; line-height: 1; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; }
+.dz-anim .dz-from { position: absolute; left: 4px; top: 8px; }
+.dz-anim .dz-to { position: absolute; right: 4px; top: 8px; }
+.dz-anim .dz-doc { position: absolute; top: 10px; font-size: 18px; animation: dz-fly 1.3s linear infinite; }
+@keyframes dz-fly { 0% { left: 40px; top: 14px; } 50% { top: 0; } 100% { left: calc(100% - 62px); top: 14px; } }
+.dz-line { min-height: 1.35em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dz-progress { height: 20px; margin: 10px 0 6px; padding: 2px; background: #fff; box-shadow: var(--dz-sunken); }
+.dz-progress > div { width: 0; height: 100%; background: repeating-linear-gradient(90deg, #000080 0 9px, transparent 9px 11px); transition: width .25s linear; }
+.dz-meta { display: flex; justify-content: space-between; gap: 10px; color: #000; }
+
+/* ---------- Bluescreen, Herunterfahren, Startbild ---------- */
+.dz-full { position: fixed; inset: 0; z-index: 1000000; display: grid; place-items: center; padding: 20px; }
+.dz-bsod { background: #0000aa; color: #fff; font: 16px/1.5 "Lucida Console", "Courier New", monospace; cursor: default; }
+.dz-bsod-inner { max-width: 680px; }
+.dz-bsod-head { text-align: center; margin-bottom: 18px; }
+.dz-bsod-head span { padding: 0 8px; background: #aaaaaa; color: #0000aa; font-weight: bold; }
+.dz-bsod p { margin: 0 0 16px; }
+.dz-bsod .dz-center { text-align: center; margin-top: 26px; }
+.dz-cursor { animation: dz-blink 1s steps(1) infinite; }
+@keyframes dz-blink { 50% { visibility: hidden; } }
+.dz-shutdown { background: #000; color: #fff; font: bold 22px/1.4 Arial, sans-serif; text-align: center; }
+.dz-shutdown.dz-off { color: #ff8c00; font-size: 28px; }
+.dz-boot { background: linear-gradient(180deg, #5e9fe8 0%, #a9cdf5 55%, #dfeefc 100%); color: #000080; text-align: center; }
+.dz-boot-logo { font: bold italic 54px/1.1 "Times New Roman", serif; text-shadow: 3px 3px 0 #fff; }
+.dz-boot-logo small { display: block; font: bold 18px Arial, sans-serif; font-style: normal; text-shadow: none; color: #000; }
+.dz-boot-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 18px;
+  background: repeating-linear-gradient(90deg, #000080 0 40px, #1084d0 40px 80px, #00a0ff 80px 120px, #1084d0 120px 160px);
+  background-size: 160px 100%; animation: dz-boot 0.6s linear infinite;
+}
+@keyframes dz-boot { to { background-position: 160px 0; } }
+
+@media (max-width: 480px) {
+  .dz-body { padding: 10px 8px 6px; gap: 10px; }
+  .dz-tab { padding: 3px 5px; font-size: 12px; }
+}

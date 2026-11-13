@@ -15,6 +15,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/design-switch.css">
+  <!-- Retro-Design (Windows 95 / 2000er). Umschalten über den Knopf "Design" (js/design.js). -->
+  <link id="retro-css" rel="stylesheet" href="css/retro.css">
+  <script>try { if (localStorage.getItem('gg.design') === 'original') document.getElementById('retro-css').media = 'not all'; } catch (e) {}</script>
 </head>
 <body>
   <!-- ============ HOME / SPIELERAUSWAHL ============ -->
@@ -25,6 +29,7 @@
         <button class="navbtn navbtn-comp" data-nav="comp">⚔️ Competition Mode</button>
         <button class="navbtn" data-nav="leaderboard">🏆 Bestenliste</button>
         <button class="navbtn" data-nav="settings">⚙️ Einstellungen</button>
+        <button class="navbtn" data-design title="Design wählen">🖥️ Design</button>
         <span id="sync-badge" class="sync-badge" title="Speicherstatus"></span>
         <button class="navbtn fs-btn" data-fs title="Vollbild an/aus">⛶</button>
       </nav>
@@ -33,8 +38,14 @@
       <div id="challenge-banner" class="challenge-banner hidden"></div>
       <h1 class="headline">Wer spielt?</h1>
       <p class="subline">Wähle deinen Spieler – deine Punkte werden automatisch gespeichert.</p>
+      <div class="retro-marquee" hidden><marquee scrollamount="4">+++ Herzlich willkommen auf der GeoGuessr Freunde-Edition! +++ Spieler wählen, Pin setzen, Punkte sammeln +++ Neu: Competition Mode für alle gleichzeitig +++ Bitte ein Lesezeichen setzen! +++</marquee></div>
       <div id="player-grid" class="player-grid"></div>
       <section id="points-info" class="info-box card"></section>
+      <div class="retro-footer" hidden>
+        <div class="retro-construction">🚧 Diese Seite ist <b>ständig</b> im Aufbau! 🚧</div>
+        <div class="retro-badges"><span>Optimiert für 800×600</span><span>Made with Notepad</span><span>100% Handarbeit</span><span>Kein Flash nötig</span></div>
+        <div class="retro-copy">GeoGuessr Freunde-Edition · Am besten mit 256 Farben ansehen</div>
+      </div>
     </main>
   </section>
 
@@ -415,7 +426,25 @@
   </div>
   <div id="toasts" class="toasts"></div>
 
+  <!-- Retro-Taskleiste: nur mit retro.css sichtbar, nur auf den Menü-Bildschirmen -->
+  <div class="w95-taskbar" hidden>
+    <button class="w95-start" data-nav="home" title="Hauptmenü"><span>🌍</span> Start</button>
+    <span class="w95-sep"></span>
+    <button class="w95-task" data-nav="leaderboard">🏆 Bestenliste</button>
+    <button class="w95-task" data-nav="comp">⚔️ Competition</button>
+    <span class="w95-tray" id="w95-clock"></span>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById('w95-clock');
+      if (!el) return;
+      function tick() { var d = new Date(); el.textContent = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+      tick(); setInterval(tick, 10000);
+    })();
+  </script>
+
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/design.js"></script>
 </body>
 </html>

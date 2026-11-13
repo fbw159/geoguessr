@@ -1,0 +1,536 @@
+/* ===========================================================================
+   Retro-Design: Windows 95 + einfache Homepage aus den 2000ern.
+   Wird NACH style.css geladen und überschreibt nur das Aussehen (Farben,
+   Schriften, Rahmen, Abstände). Positionen, Ein-/Ausblenden, Kartengrößen
+   und alle Klassen/IDs bleiben wie in style.css.
+   Umschalten zum alten Design: Knopf "Design" (js/design.js schaltet diese
+   Datei per media="not all" ab). Die Retro-Extras im HTML (Lauftext, Footer,
+   Taskleiste) tragen das Attribut "hidden" und sind ohne diese Datei weg.
+   =========================================================================== */
+
+:root {
+  --w-face: #c0c0c0;
+  --w-light: #dfdfdf;
+  --w-shadow: #808080;
+  --w-navy: #000080;
+  --w-desk: #008080;
+  --w-tip: #ffffe1;
+  --raised: inset -1px -1px #0a0a0a, inset 1px 1px #ffffff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  --window: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf, inset -2px -2px #808080, inset 2px 2px #ffffff;
+  --pressed: inset -1px -1px #ffffff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+  --sunken: inset -1px -1px #ffffff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+  --thin-in: inset -1px -1px #ffffff, inset 1px 1px #808080;
+  --title-grad: linear-gradient(90deg, #000080, #1084d0);
+  --dither: repeating-conic-gradient(#ffffff 0 25%, #c0c0c0 0 50%) 0 0 / 2px 2px;
+  --ui-font: "Microsoft Sans Serif", "MS Sans Serif", Tahoma, Geneva, "Segoe UI", sans-serif;
+  --page-font: Verdana, Geneva, Tahoma, sans-serif;
+  --serif: "Times New Roman", Times, serif;
+  --comic: "Comic Sans MS", "Comic Sans", "Chalkboard SE", cursive;
+  --mono: "Courier New", Courier, monospace;
+  --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+
+  /* Original-Farbvariablen auf hell umstellen, damit nichts dunkel übrig bleibt */
+  --bg-1: #008080; --bg-2: #008080; --bg-3: #000080;
+  --panel: #c0c0c0; --panel-solid: #c0c0c0;
+  --line: #808080; --line-strong: #000000;
+  --text: #000000; --muted: #404040;
+  --accent: #000080; --accent-ink: #ffffff;
+  --green: #008000; --green-2: #006000; --red: #c00000;
+  --radius: 0; --shadow: none;
+  color-scheme: light;
+}
+
+body {
+  font: 13px/1.4 var(--page-font);
+  color: #000;
+  background: var(--w-desk);
+  -webkit-font-smoothing: auto;
+}
+::selection { background: #000080; color: #fff; }
+a { color: #0000ee; }
+a:visited { color: #551a8b; }
+.muted { color: var(--muted); }
+
+/* Scrollbalken im Win95-Stil */
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track { background: var(--dither); }
+::-webkit-scrollbar-thumb { background: var(--w-face); box-shadow: var(--raised); }
+::-webkit-scrollbar-corner { background: var(--w-face); }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-color: #c0c0c0 #e8e8e8; }
+}
+
+@keyframes w95-blink { 50% { visibility: hidden; } }
+@keyframes w95-hourglass { 50% { transform: rotate(180deg); } }
+
+/* ---------------- Fenster (alle Menü-Bildschirme) ---------------- */
+.screen:is(#screen-home, #screen-setup, #screen-leaderboard, #screen-settings, #screen-comp, #screen-comp-lobby) {
+  width: calc(100% - 32px); max-width: 1180px; margin: 16px auto 20px; padding: 3px;
+  background: var(--w-face); box-shadow: var(--window);
+}
+/* Statusleiste unten im Fenster */
+.screen:is(#screen-home, #screen-setup, #screen-leaderboard, #screen-settings, #screen-comp, #screen-comp-lobby)::after {
+  content: "🌐 Fertig"; display: block; margin-top: 2px; padding: 2px 6px;
+  font: 12px var(--ui-font); box-shadow: var(--thin-in);
+}
+
+/* Titelleiste + Toolbar + Adresszeile */
+.topbar {
+  position: relative; max-width: none; margin: 0; padding: 0; gap: 0;
+  flex-wrap: wrap; align-items: stretch;
+}
+.brand, .brand:visited {
+  flex: 1 1 100%; align-items: center; gap: 6px; min-height: 24px; padding: 3px 4px;
+  background: var(--title-grad); color: #fff; font: bold 13px var(--ui-font);
+}
+.brand-globe { font: 15px/1 var(--emoji); }
+.brand-text { font-size: 13px; font-weight: bold; font-style: normal; letter-spacing: 0; }
+.brand-text b { color: #fff; }
+.brand-sub { color: #fff; font-weight: bold; font-size: 13px; }
+.brand-sub::before { content: "– "; }
+/* Fenster-Knöpfe (nur Deko; Schließen führt wie das Logo zum Hauptmenü) */
+.brand::after, .topbar::before, .topbar::after {
+  width: 16px; height: 14px; background-color: var(--w-face); box-shadow: var(--raised); color: #000;
+}
+.brand::after {
+  content: "×"; margin-left: auto; display: grid; place-items: center;
+  font: bold 14px/1 Arial, sans-serif;
+}
+.topbar::before, .topbar::after {
+  content: ""; position: absolute; top: 5px; pointer-events: none; background-repeat: no-repeat;
+}
+.topbar::before { right: 38px; background-image: linear-gradient(#000, #000); background-size: 6px 2px; background-position: 4px 9px; }
+.topbar::after {
+  right: 22px;
+  background-image: linear-gradient(#000, #000), linear-gradient(#000, #000), linear-gradient(#000, #000), linear-gradient(#000, #000);
+  background-size: 9px 2px, 1px 9px, 1px 9px, 9px 1px;
+  background-position: 3px 2px, 3px 2px, 11px 2px, 3px 10px;
+}
+
+.topnav {
+  flex: 1 1 100%; justify-content: flex-start; gap: 3px; padding: 4px 2px;
+  border-bottom: 1px solid #808080; box-shadow: 0 1px #fff; margin-bottom: 3px;
+}
+.topnav::after {
+  content: "🌐  https://fbw159.github.io/geoguessr/"; order: 99; flex: 1 1 100%; margin-top: 3px;
+  padding: 3px 6px; background: #fff; box-shadow: var(--sunken); color: #000;
+  font: 12px var(--ui-font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.navbtn {
+  background: var(--w-face); color: #000; border: 0; border-radius: 0; box-shadow: var(--raised);
+  padding: 4px 10px; min-height: 26px; font: 13px var(--ui-font); transition: none;
+}
+.navbtn:hover { background: var(--w-face); border-color: transparent; }
+.navbtn:active { box-shadow: var(--pressed); padding: 5px 9px 3px 11px; }
+.navbtn-comp, .navbtn-comp:hover { background: var(--w-face); color: #000; border-color: transparent; }
+.navbtn-comp::after { content: " NEU!"; color: #ff0000; font-weight: bold; animation: w95-blink 1s steps(1) infinite; }
+.fs-btn { padding: 4px 8px; font-size: 14px; }
+[data-fs].on { background: var(--dither); color: #000; border-color: transparent; box-shadow: var(--pressed); }
+.sync-badge {
+  margin-left: auto; padding: 3px 8px; border: 0; border-radius: 0; background: var(--w-face);
+  box-shadow: var(--thin-in); font: 12px var(--ui-font);
+}
+.sb-good { color: #006000; background: var(--w-face); }
+.sb-warn { color: #7a5200; background: var(--w-face); }
+.sb-bad { color: #c00000; background: var(--w-face); }
+.sb-neutral { color: #000; background: var(--w-face); }
+.current-player { font: bold 13px var(--ui-font); }
+
+/* Seiteninhalt = weiße "Homepage" */
+.home-main, .setup-main, .lb-main, .settings-main, .comp-main {
+  max-width: none; margin: 0; padding: 14px 22px 24px; min-height: 260px;
+  background: #fff; box-shadow: var(--sunken);
+}
+
+/* ---------------- Überschriften ---------------- */
+.headline {
+  width: fit-content; max-width: 100%; margin: 6px 0 8px;
+  font-family: var(--serif); font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: bold; font-style: italic;
+  text-transform: none; letter-spacing: 0; text-shadow: none;
+  background: linear-gradient(90deg, #c00000, #ff7a00 22%, #c8a000 40%, #008000 58%, #0000c0 78%, #800080);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: #000080;
+  filter: drop-shadow(2px 2px 0 #c0c0c0);
+}
+.subline { font: 15px var(--comic); color: #800080; margin: 0 0 12px; }
+.h2 {
+  font: bold 1.35rem var(--serif); color: #000080; margin: 22px 0 10px;
+  padding-bottom: 2px; border-bottom: 2px groove #e8e8e8;
+}
+.h3 { font-family: var(--serif); color: #000080; }
+
+/* ---------------- Knöpfe ---------------- */
+.btn, .btn:visited {
+  border: 0; border-radius: 0; background: var(--w-face); color: #000; box-shadow: var(--raised);
+  padding: 5px 16px; min-height: 28px; font: 13px var(--ui-font);
+  text-transform: none; font-style: normal; letter-spacing: 0; transition: none;
+}
+.btn:active:not(:disabled) { transform: none; box-shadow: var(--pressed); padding: 6px 15px 4px 17px; }
+.btn:disabled { opacity: 1; color: #808080; text-shadow: 1px 1px 0 #fff; cursor: default; }
+.btn:focus-visible, .navbtn:focus-visible, .chip:focus-visible, .seg button:focus-visible,
+.player-card:focus-visible, .map-card:focus-visible { outline: 1px dotted #000; outline-offset: -5px; }
+.btn-primary { border: 1px solid #000; font-weight: bold; text-transform: none; font-style: normal; background: var(--w-face); box-shadow: var(--raised); }
+.btn-primary:hover:not(:disabled) { filter: none; }
+.btn-ghost, .btn-ghost:hover { background: var(--w-face); border: 0; }
+.btn-danger { border: 1px solid #000; background: var(--w-face); color: #c00000; font-weight: bold; text-transform: none; font-style: normal; box-shadow: var(--raised); }
+.btn-danger-text { color: #c00000; }
+.btn-xl { font-size: 16px; padding: 8px 30px; }
+.btn-xl:active:not(:disabled) { padding: 9px 29px 7px 31px; }
+.chip {
+  background: var(--w-face); color: #000; border: 0; border-radius: 0; box-shadow: var(--raised);
+  padding: 3px 8px; font: 12px var(--ui-font);
+}
+.chip:hover, .chip-danger:hover, .chip-stop, .chip-stop:hover { background: var(--w-face); color: #000; border-color: transparent; }
+.chip:active { box-shadow: var(--pressed); }
+.chip-danger { font-weight: bold; }
+
+/* ---------------- Avatare (eckig wie Icons) ---------------- */
+.avatar {
+  border-radius: 0; background: var(--c); color: #000; box-shadow: var(--raised);
+}
+
+/* ---------------- Startseite ---------------- */
+.player-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.player-card {
+  padding: 18px 10px 14px; gap: 6px; border: 0; border-radius: 0;
+  background: var(--w-face); color: #000; box-shadow: var(--raised); transition: none; font-family: var(--ui-font);
+}
+.player-card:hover { transform: none; border-color: transparent; background: var(--w-face); box-shadow: var(--raised); }
+.player-card:active { box-shadow: var(--pressed); }
+.player-card.last { border-color: transparent; outline: 1px dotted #000; outline-offset: -6px; }
+.pc-name { font: bold 15px var(--ui-font); }
+.pc-avg { color: #000080; font: bold 26px/1 var(--serif); }
+.pc-avg small { color: var(--muted); font: 11px var(--ui-font); }
+.pc-stats { color: var(--muted); font-size: 12px; }
+.pc-stats b { color: #000; }
+.pc-rank { top: 6px; left: 8px; font: bold 16px var(--ui-font); color: #000; }
+.pc-last { top: 6px; right: 6px; border-radius: 0; background: #000080; color: #fff; font: bold 10px var(--ui-font); }
+.add-card { border-style: none; background: var(--w-face); }
+.add-av { background: #fff; color: #000; box-shadow: var(--sunken); font: 40px/1 var(--ui-font); }
+.loading-card { color: #000; }
+.challenge-banner { border-radius: 0; background: var(--w-tip); border: 1px solid #000; color: #000; }
+
+/* Lauftext + Footer (nur im Retro-Design sichtbar) */
+.retro-marquee {
+  display: block; margin: 0 0 16px; padding: 3px 0; background: #000080; color: #ffff00;
+  font: bold 13px var(--page-font); box-shadow: var(--sunken);
+}
+.retro-marquee marquee { display: block; }
+.retro-footer { display: block; margin-top: 26px; padding-top: 14px; border-top: 2px groove #e8e8e8; text-align: center; font: 12px var(--page-font); }
+.retro-construction {
+  display: inline-block; padding: 4px 14px; background: #ffff00; font: bold 13px var(--comic);
+  border: 5px solid; border-image: repeating-linear-gradient(45deg, #000 0 6px, #ffd800 6px 12px) 5;
+}
+.retro-construction b { animation: w95-blink 1.2s steps(1) infinite; }
+.retro-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 14px 0 10px; }
+.retro-badges span {
+  display: grid; place-items: center; width: 88px; height: 31px; padding: 0 3px; line-height: 1.1;
+  font: bold 9px Verdana, sans-serif; text-align: center; border: 1px solid #000; color: #fff;
+}
+.retro-badges span:nth-child(1) { background: linear-gradient(#3a6ea5, #000080); }
+.retro-badges span:nth-child(2) { background: linear-gradient(#ffffff, #c0c0c0); color: #000; }
+.retro-badges span:nth-child(3) { background: linear-gradient(#5aa02c, #006000); }
+.retro-badges span:nth-child(4) { background: linear-gradient(#000, #444); color: #00ff00; font-family: var(--mono); }
+.retro-copy { color: var(--muted); }
+
+/* ---------------- Spiel-Setup ---------------- */
+.map-grid { gap: 10px; }
+.map-card {
+  padding: 12px 12px 10px; border: 0; border-radius: 0; background: var(--w-face); color: #000;
+  box-shadow: var(--raised); transition: none; font-family: var(--ui-font);
+}
+.map-card:hover { transform: none; border-color: transparent; }
+.map-card.sel { box-shadow: var(--pressed); background: var(--dither); border-color: transparent; }
+.map-card.sel .mc-name { background: #000080; color: #fff; padding: 0 3px; }
+.mc-name { font: bold 15px var(--ui-font); }
+.mc-desc { color: var(--muted); font-size: 12px; }
+.mc-count { color: var(--muted); font: 11px var(--ui-font); text-transform: none; letter-spacing: 0; }
+.country-pick label, .lb-filter label { color: #000; font: 13px var(--ui-font); }
+
+select, input[type="text"], input[type="password"], input:not([type]) {
+  background: #fff; color: #000; border: 0; border-radius: 0; box-shadow: var(--sunken);
+  padding: 4px 6px; min-height: 26px; font: 13px var(--ui-font);
+}
+select:focus, input:focus { border-color: transparent; box-shadow: var(--sunken); outline: none; }
+select option { background: #fff; color: #000; }
+select.sel { background: #000080; color: #fff; }
+input.code-input { font-family: var(--mono); }
+
+.opt-label { color: #000; font: bold 12px var(--ui-font); text-transform: none; letter-spacing: 0; }
+.seg { background: none; border: 0; border-radius: 0; padding: 0; gap: 0; }
+.seg button {
+  background: var(--w-face); color: #000; border-radius: 0; box-shadow: var(--raised);
+  padding: 4px 12px; min-height: 26px; font: 13px var(--ui-font);
+}
+.seg button:hover { background: var(--w-face); }
+.seg button.sel { background: var(--dither); color: #000; box-shadow: var(--pressed); font-weight: bold; }
+.setup-actions { margin-top: 26px; }
+
+/* ---------------- Spiel ---------------- */
+.sv-loading { background: var(--w-desk); }
+.spinner, .spinner-sm { width: auto; height: auto; border: 0; border-radius: 0; animation: none; }
+.spinner::before, .spinner-sm::before { content: "⌛"; display: inline-block; font-family: var(--emoji); animation: w95-hourglass 1.6s steps(1) infinite; }
+.spinner::before { font-size: 40px; line-height: 1; }
+.spinner-sm::before { font-size: 13px; }
+
+.hud {
+  padding: 3px 6px 6px; gap: 6px; min-width: 280px; color: #000; font-family: var(--ui-font);
+  background: var(--w-face); backdrop-filter: none; border: 0; border-radius: 0; box-shadow: var(--window);
+}
+.hud::before {
+  content: "GeoGuessr.exe"; margin: 0 -3px; padding: 2px 4px;
+  background: var(--title-grad); color: #fff; font: bold 12px var(--ui-font);
+}
+.hud-player { font: bold 14px var(--ui-font); }
+.hud-stats { gap: 3px; }
+.hud-stats > div { flex: 1; padding: 2px 6px; box-shadow: var(--thin-in); }
+.hud-k { color: var(--muted); font: 10px var(--ui-font); text-transform: none; letter-spacing: 0; }
+.hud-v { font: bold 14px var(--ui-font); }
+.hud-actions { gap: 3px; flex-wrap: wrap; }
+.hud-extra { border-top: 1px solid #808080; box-shadow: inset 0 1px #fff; padding-top: 6px; }
+.hp i { border-color: var(--w-face); }
+
+/* Timer = LED-Anzeige */
+.timer {
+  background: #000; color: #ff0000; border: 0; border-radius: 0; box-shadow: var(--sunken);
+  padding: 3px 12px; font: bold 28px/1.1 var(--mono); letter-spacing: 2px; text-shadow: 0 0 6px rgba(255, 0, 0, 0.7);
+}
+.timer.urgent { background: #000; animation: w95-blink 1s steps(1) infinite; }
+
+/* Rate-Karte als kleines Fenster */
+.guess-panel { padding: 3px; background: var(--w-face); box-shadow: var(--window); }
+.guess-panel::before {
+  content: "🗺️ Karte"; display: block; margin-bottom: 3px; padding: 2px 4px;
+  background: var(--title-grad); color: #fff; font: bold 12px var(--ui-font);
+}
+.guess-tools { opacity: 1; gap: 2px; margin-bottom: 3px; }
+.gtool {
+  width: 26px; height: 22px; border: 0; border-radius: 0; background: var(--w-face); color: #000;
+  box-shadow: var(--raised); font: bold 13px var(--ui-font);
+}
+.gtool:hover { background: var(--w-face); }
+.gtool.on { background: var(--dither); color: #000; box-shadow: var(--pressed); }
+#guess-map { border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; box-shadow: none; }
+.btn-guess {
+  margin-top: 3px; padding: 6px; border: 1px solid #000; background: var(--w-face); color: #000;
+  box-shadow: var(--raised); font: bold 14px var(--ui-font); text-transform: none; font-style: normal;
+}
+.btn-guess:disabled {
+  border-color: transparent; background: var(--w-face); box-shadow: var(--raised); color: #808080;
+  text-shadow: 1px 1px 0 #fff; font: 13px var(--ui-font);
+}
+.play-wait { background: var(--w-tip); color: #000; border: 1px solid #000; border-radius: 0; box-shadow: none; font: bold 13px var(--ui-font); }
+
+/* ---------------- Rundenergebnis ---------------- */
+.result-panel {
+  padding: 10px 24px 14px; color: #000; background: var(--w-face); border-top: 0; box-shadow: var(--window);
+}
+.result-headline { color: #000080; font: bold italic 2.2rem var(--serif); }
+.result-headline small { color: #000; font: 15px var(--ui-font); }
+.result-sub { font: 15px var(--ui-font); }
+.result-place { font: 14px var(--ui-font); }
+.scorebar { height: 22px; padding: 3px; border-radius: 0; background: #fff; box-shadow: var(--sunken); }
+.scorebar-fill { border-radius: 0; background: repeating-linear-gradient(90deg, #000080 0 9px, transparent 9px 11px); }
+.flag { border-radius: 0; box-shadow: 1px 1px 0 #000; }
+
+/* ---------------- Spielende / Wettkampf-Ergebnis ---------------- */
+.final-card {
+  padding: 0 12px 12px; gap: 10px; color: #000; font-family: var(--ui-font);
+  background: var(--w-face); backdrop-filter: none; border: 0; border-radius: 0; box-shadow: var(--window);
+}
+.final-card::before {
+  content: "Spielergebnis"; flex: none; display: block; position: sticky; top: 0; z-index: 2;
+  margin: 3px -9px 0; padding: 3px 6px; background: var(--title-grad); color: #fff; font: bold 13px var(--ui-font);
+}
+.cr-card::before { content: "Rundenergebnis"; }
+.cf-card::before { content: "Siegerehrung"; }
+.fp-name { font: bold 16px var(--ui-font); }
+.final-total { color: #000080; font: bold 2.6rem/1 var(--serif); }
+.final-total small { color: var(--muted); font: 14px var(--ui-font); }
+.final-save { border-radius: 0; background: #fff; box-shadow: var(--thin-in); color: #000; font: 13px var(--ui-font); padding: 6px 8px; }
+.save-ok { color: #006000; background: #fff; }
+.save-local { color: #7a5200; background: var(--w-tip); }
+.save-error, .save-badkey { color: #c00000; background: #fff; }
+.challenge-result { border-radius: 0; background: var(--w-tip); border: 1px solid #000; }
+
+.rounds-table {
+  border-collapse: separate; border-spacing: 0; padding: 2px; background: #fff; box-shadow: var(--sunken);
+  font: 13px var(--ui-font);
+}
+.rounds-table th {
+  padding: 3px 6px; border-bottom: 0; background: var(--w-face); color: #000; box-shadow: var(--raised);
+  font: 12px var(--ui-font); text-transform: none; letter-spacing: 0;
+}
+.rounds-table td { padding: 4px 6px; border-bottom: 1px solid #e4e4e4; }
+.rounds-table tr.me td { background: #000080; color: #fff; }
+.cr-title { color: #000080; font: bold italic 1.8rem var(--serif); }
+.cr-title small { color: var(--muted); font: 13px var(--ui-font); }
+.cr-next { border-radius: 0; background: #fff; box-shadow: var(--thin-in); font: bold 14px var(--ui-font); }
+.cr-next b { color: #c00000; }
+.cf-title { color: #000080; font: bold italic 2rem var(--serif); }
+.pod-name { font: bold 13px var(--ui-font); }
+.pod-pts { color: #c00000; }
+.pod-block { border-radius: 0; background: var(--c); color: #000; box-shadow: var(--raised); font: bold 1.6rem var(--ui-font); }
+
+/* ---------------- Bestenliste: HTML-Tabelle wie um 2000 ---------------- */
+.table-wrap { border: 0; border-radius: 0; background: transparent; }
+.lb-table {
+  border-collapse: separate; border-spacing: 2px; border: 2px outset #d4d4d4; background: #fff;
+  font: 13px var(--page-font);
+}
+.lb-table th {
+  padding: 5px 8px; border: 1px inset #d4d4d4; background: #000080; color: #fff;
+  font: bold 12px var(--page-font); text-transform: none; letter-spacing: 0;
+}
+.lb-table th.sortable:hover { color: #fff; text-decoration: underline; }
+.lb-table th.key-col { color: #fff; }
+.lb-table th.sorted, .lb-table th.key-col.sorted { color: #ffff00; }
+.lb-table td, .lb-table tbody tr:last-child td { padding: 4px 8px; border: 1px inset #d4d4d4; }
+.lb-table tbody tr:nth-child(even) td { background: #f0f0f0; }
+.lb-table tr.clickable:hover td { background: #000080; color: #fff; }
+.lb-table tr.clickable:hover td .muted, .lb-table tr.clickable:hover td.key-val { color: #fff; }
+.lb-table td.key-val { color: #c00000; font: bold 15px var(--page-font); }
+.td-rank { font: bold 16px var(--ui-font); }
+.cell-player { font: bold 13px var(--page-font); }
+.rank-note { font-size: 11px; }
+
+/* Profil-Dialog */
+.profile-games { gap: 0; padding: 2px; background: #fff; box-shadow: var(--sunken); }
+.game-row { border: 0; border-radius: 0; padding: 4px 8px; background: #fff; color: #000; font: 13px var(--ui-font); }
+.game-row:hover { background: #000080; color: #fff; }
+.game-row:hover .muted, .game-row:hover .gr-map { color: #ddd; }
+.gr-bar { height: 10px; border-radius: 0; background: #fff; box-shadow: var(--thin-in); }
+.gr-bar span { border-radius: 0; background: repeating-linear-gradient(90deg, #000080 0 5px, transparent 5px 6px); }
+.tiles { gap: 6px; }
+.tile { padding: 8px; border-radius: 0; background: #fff; box-shadow: var(--sunken); }
+.tile b { color: #000; font: bold 16px var(--ui-font); }
+.tile span { color: var(--muted); font: 11px var(--ui-font); text-transform: none; letter-spacing: 0; }
+.tile-key b { color: #c00000; font-size: 20px; }
+
+/* ---------------- Kästen = kleine Fenster ---------------- */
+.card {
+  padding: 3px 14px 14px; margin-bottom: 14px; color: #000; font-family: var(--ui-font);
+  background: var(--w-face); border: 0; border-radius: 0; box-shadow: var(--window);
+}
+.card > .h2:first-child, .info-box-title {
+  margin: 0 -11px 10px; padding: 3px 6px; border: 0; background: var(--title-grad); color: #fff;
+  font: bold 13px var(--ui-font);
+}
+.card p { font-family: var(--page-font); }
+.row { gap: 6px; }
+.ks { padding: 8px 10px; border: 1px solid #000; border-radius: 0; font: 13px var(--ui-font); }
+.ks-good { background: #fff; color: #006000; }
+.ks-warn { background: var(--w-tip); color: #000; }
+.ks-bad { background: #fff; color: #c00000; }
+.ks-info { background: #fff; color: #000; }
+.howto { color: var(--muted); }
+.howto summary { color: #0000ee; font-weight: bold; text-decoration: underline; }
+.mp-row { border-radius: 0; background: #fff; box-shadow: var(--thin-in); }
+.mp-name { font: bold 13px var(--ui-font); }
+
+/* Punkte-Erklärung auf der Startseite */
+.info-box { margin-top: 26px; padding: 3px 14px 14px; }
+.info-box-grid { gap: 10px; }
+.info-box-item { padding: 10px 12px; border: 0; border-radius: 0; background: #fff; box-shadow: var(--sunken); }
+.info-box-item p { color: #000; }
+.info-box-item p b { color: #000; }
+.info-box-head { font: bold 14px var(--ui-font); }
+
+/* ---------------- Dialoge ---------------- */
+.modal { background: rgba(0, 0, 0, 0.25); backdrop-filter: none; }
+.modal-box {
+  padding: 0 14px 14px; color: #000; font-family: var(--ui-font);
+  background: var(--w-face); border: 0; border-radius: 0; box-shadow: var(--window), 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+.modal-box::before {
+  content: "GeoGuessr"; display: block; position: sticky; top: 0; z-index: 2;
+  margin: 3px -11px 12px; padding: 3px 6px; background: var(--title-grad); color: #fff; font: bold 13px var(--ui-font);
+}
+.modal-title { color: #000080; font: bold 1.35rem var(--serif); }
+.modal-text { font: 14px var(--ui-font); }
+.field > span { color: #000; font: bold 12px var(--ui-font); text-transform: none; letter-spacing: 0; }
+.pd-name { font: bold 1.4rem var(--ui-font); }
+.swatch { width: 28px; height: 28px; border: 0; border-radius: 0; background: var(--c); box-shadow: var(--raised); }
+.swatch.sel { border-color: transparent; box-shadow: var(--pressed); outline: 1px dotted #000; outline-offset: 2px; }
+.emoji-btn { width: 36px; height: 36px; border: 0; border-radius: 0; background: var(--w-face); box-shadow: var(--raised); font-size: 20px; }
+.emoji-btn:hover { background: var(--w-face); }
+.emoji-btn.sel { border-color: transparent; background: var(--dither); box-shadow: var(--pressed); }
+.pd-error { color: #c00000; }
+
+.info-tabs { gap: 0; padding: 0; margin: 10px 0 4px; background: none; border: 0; border-radius: 0; }
+.info-tab { padding: 4px 12px; border-radius: 0; background: var(--w-face); color: #000; box-shadow: var(--raised); font: 13px var(--ui-font); }
+.info-tab.sel { background: var(--dither); color: #000; box-shadow: var(--pressed); font-weight: bold; }
+.info-pane p, .info-list { color: #000; }
+.info-formula { border: 0; border-radius: 0; background: #fff; box-shadow: var(--sunken); font: bold italic 15px var(--serif); }
+.info-col { border: 0; border-radius: 0; background: #fff; box-shadow: var(--sunken); }
+.info-col-head { font: bold 13px var(--ui-font); }
+.info-table th { color: #000; border-bottom: 1px solid #808080; font: bold 11px var(--ui-font); text-transform: none; letter-spacing: 0; }
+.info-table td { border-bottom: 1px solid #e4e4e4; }
+.info-bar { height: 9px; border-radius: 0; background: #fff; box-shadow: var(--thin-in); }
+.info-bar span { border-radius: 0; background: repeating-linear-gradient(90deg, #000080 0 4px, transparent 4px 5px); }
+
+/* ---------------- Hinweise (Toasts) = gelbe Tooltips ---------------- */
+.toasts { bottom: 44px; }
+.toast {
+  padding: 6px 10px; border: 1px solid #000; border-radius: 0; background: var(--w-tip); color: #000;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3); font: 13px var(--ui-font);
+}
+.toast-ok { border-color: #000; }
+.toast-error { border-color: #000; background: var(--w-tip); color: #c00000; }
+
+.maplibregl-map { font-family: var(--ui-font); }
+
+/* ---------------- Competition Mode ---------------- */
+input.code-input { font-weight: bold !important; }
+.lobby-head { padding: 12px 16px; }
+.lobby-code {
+  width: fit-content; padding: 2px 14px; background: #000; color: #ff0000; box-shadow: var(--sunken);
+  font: bold 3rem/1.1 var(--mono); text-shadow: 0 0 8px rgba(255, 0, 0, 0.7);
+}
+.lobby-settings { font: bold 14px var(--ui-font); }
+.lobby-player {
+  padding: 6px 12px 6px 6px; border: 0; border-left: 6px solid var(--c); border-radius: 0;
+  background: var(--w-face); box-shadow: var(--raised); font-family: var(--ui-font);
+}
+.lp-name { font: bold 14px var(--ui-font); }
+.lp-tag { border-radius: 0; background: #fff; box-shadow: var(--thin-in); font: bold 11px var(--ui-font); }
+.lp-me { background: #000080; color: #fff; box-shadow: none; }
+.lobby-wait { color: #000; font: bold 14px var(--ui-font); }
+.comp-waiting { padding: 10px 14px; border: 0; background: var(--w-tip); box-shadow: var(--window); }
+.cw-title { font: bold 14px var(--ui-font); }
+
+.countdown { background: rgba(0, 128, 128, 0.88); backdrop-filter: none; }
+.cd-label { color: #fff; font: bold 1.4rem var(--ui-font); }
+.cd-num { color: #fff; font: bold 10rem/1 "Arial Black", Impact, sans-serif; font-style: normal; text-shadow: 6px 6px 0 #000080; }
+
+/* ---------------- Taskleiste (nur auf Menü-Bildschirmen) ---------------- */
+.w95-taskbar {
+  display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; height: 32px;
+  align-items: center; gap: 3px; padding: 3px 2px 2px;
+  background: var(--w-face); box-shadow: inset 0 1px #dfdfdf, inset 0 2px #fff; font: 13px var(--ui-font);
+}
+body:has(:is(#screen-home, #screen-setup, #screen-leaderboard, #screen-settings, #screen-comp).active) .w95-taskbar { display: flex; }
+body:has(:is(#screen-home, #screen-setup, #screen-leaderboard, #screen-settings, #screen-comp).active) { padding-bottom: 34px; }
+.w95-taskbar button {
+  height: 26px; padding: 0 8px; border: 0; border-radius: 0; background: var(--w-face); color: #000;
+  box-shadow: var(--raised); font: 13px var(--ui-font); cursor: pointer; white-space: nowrap;
+}
+.w95-taskbar button:active { box-shadow: var(--pressed); }
+.w95-start { font-weight: bold !important; }
+.w95-start span { font-family: var(--emoji); }
+.w95-task { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+body:has(#screen-leaderboard.active) .w95-task[data-nav="leaderboard"],
+body:has(#screen-comp.active) .w95-task[data-nav="comp"] { background: var(--dither); box-shadow: var(--pressed); font-weight: bold; }
+.w95-sep { width: 2px; height: 22px; margin: 0 2px; border-left: 1px solid #808080; border-right: 1px solid #fff; }
+.w95-tray { margin-left: auto; padding: 3px 10px; box-shadow: var(--thin-in); font: 12px var(--ui-font); white-space: nowrap; }
+
+/* ---------------- Schmale Fenster ---------------- */
+@media (max-width: 760px) {
+  .screen:is(#screen-home, #screen-setup, #screen-leaderboard, #screen-settings, #screen-comp, #screen-comp-lobby) {
+    width: calc(100% - 12px); margin: 6px auto 12px;
+  }
+  .home-main, .setup-main, .lb-main, .settings-main, .comp-main { padding: 10px 10px 18px; }
+  .hud { min-width: 0; }
+  .result-panel { padding: 10px 14px; }
+  .player-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .w95-taskbar button { padding: 0 6px; font-size: 12px; }
+}

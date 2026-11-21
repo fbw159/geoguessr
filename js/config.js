@@ -22,7 +22,7 @@ export const MIN_GUESSES_FOR_RANK = 10;
 export const COMP_TIME_FACTOR_MIN = 0.7;
 
 export const PLAYER_COLORS = ['#fecd19', '#6cb928', '#e94560', '#4cc9f0', '#f77f00', '#b5179e', '#00b4a6', '#ff70a6', '#7b61ff', '#8d99ae'];
-export const PLAYER_EMOJIS = ['🧭', '🌍', '🦊', '🐻', '🐼', '🦁', '🐸', '🐙', '🦄', '🐧', '🦉', '🚀', '⚽', '🎸', '🍕', '🌵', '👑', '😎', '🤠', '🗺️'];
+export const PLAYER_EMOJIS = ['🧭', '🌍', '🐶', '🦊', '🐻', '🐼', '🦁', '🐸', '🐙', '🦄', '🐧', '🦉', '🚀', '⚽', '🎸', '🍕', '🌵', '👑', '😎', '🤠', '🗺️'];
 
 // Kontinent je Ländercode
 const C = {
